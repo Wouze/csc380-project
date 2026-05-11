@@ -8,3 +8,5 @@ This repo is split into **two projects**:
 | [`python-hotel-project/`](python-hotel-project/) | **Python Tkinter** hotel management app (MySQL, XAMPP-friendly). |
 
 See each folder’s **README** for how to build, configure the database, and run the app.
+
+**Python hotel app — short version:** [python-hotel-project/QUICKSTART.md](python-hotel-project/QUICKSTART.md)

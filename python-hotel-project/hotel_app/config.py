@@ -9,6 +9,7 @@ def getenv(name: str, default: Optional[str] = None) -> Optional[str]:
     return v.strip()
 
 
+# Defaults match a typical XAMPP / local MariaDB install (no env vars required).
 class DatabaseSettings:
     host: str = getenv("HOTEL_DB_HOST") or "127.0.0.1"
     port: int = int(getenv("HOTEL_DB_PORT") or "3306")

@@ -2,8 +2,12 @@
 Hotel Management System — Tkinter + MySQL.
 
 Run from `python-hotel-project/`:
-  export HOTEL_DB_HOST=127.0.0.1 HOTEL_DB_NAME=hotel_management HOTEL_DB_USER=root HOTEL_DB_PASSWORD=...
   python -m hotel_app.main
+
+Defaults match a typical XAMPP install (MySQL on 127.0.0.1:3306, user root, empty password,
+database hotel_management). On first launch the app creates the database and tables if needed.
+
+To reset all tables manually: python create_schema.py
 """
 
 from __future__ import annotations
@@ -12,28 +16,41 @@ import tkinter as tk
 from tkinter import messagebox, ttk
 from typing import Callable
 
-from hotel_app.db import get_connection
+from hotel_app.config import settings
+from hotel_app.schema_setup import ensure_ready_for_app
 from hotel_app.tabs import employees, guests, hotels, invoices, reservations, rooms
 
 
-def ping_db() -> None:
+def ping_db(parent: tk.Misc) -> None:
     try:
-        with get_connection() as cn:
-            cur = cn.cursor()
-            cur.execute("SELECT 1")
-            cur.fetchone()
+        did_setup = ensure_ready_for_app()
+        if did_setup:
+            messagebox.showinfo(
+                "Hotel Management System",
+                "First-time database setup finished.\n\n"
+                f'Database "{settings.database}" is ready (schema applied).\n'
+                "Connection defaults: 127.0.0.1 port 3306, user root — typical for XAMPP.",
+                parent=parent,
+            )
     except Exception as exc:
         messagebox.showerror(
             "Hotel Management System",
-            f"Cannot connect to MySQL ({exc})\nCheck env: HOTEL_DB_HOST HOTEL_DB_PORT HOTEL_DB_NAME HOTEL_DB_USER HOTEL_DB_PASSWORD.",
+            "Cannot connect to MySQL or apply the schema.\n\n"
+            f"{exc}\n\n"
+            "Check that XAMPP **MySQL** is started (port **3306**).\n"
+            "Defaults: user **root**, empty password, database **hotel_management**.\n"
+            "Override with HOTEL_DB_* env vars, or run: python create_schema.py",
+            parent=parent,
         )
         raise SystemExit(1) from exc
 
 
 def main() -> None:
-    ping_db()
-
     root = tk.Tk()
+    root.withdraw()
+    ping_db(root)
+    root.deiconify()
+
     root.title("Hotel Management System")
     root.geometry("1100x720")
     root.minsize(900, 560)

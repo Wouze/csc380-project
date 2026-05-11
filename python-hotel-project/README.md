@@ -1,5 +1,7 @@
 # Hotel Management System (Python + Tkinter + MySQL)
 
+**Straightforward steps:** [QUICKSTART.md](QUICKSTART.md)
+
 Desktop CRUD client for the hotel schema used in **CSC 380** (hotels, rooms, guests, reservations, reservation–room lines, invoices, employees).  
 The UI is **Tkinter** with one tab per entity; SQL is sent to **MySQL** via `mysql-connector-python` (parameterized queries).
 
@@ -17,11 +19,13 @@ XAMPP ships **MariaDB** (MySQL-compatible) and starts it from the **XAMPP Contro
 
 1. **Start MySQL** (Apache is not required for this app).
 2. Confirm the port is **3306** (XAMPP default). If another program uses 3306, change the port in XAMPP’s `my.ini` / `my.cnf` and set `HOTEL_DB_PORT` to match.
-3. **Create the database** and load the schema:
-   - **Option A — phpMyAdmin** (often `http://localhost/phpmyadmin`):
-     - New database: `hotel_management`
-     - Import tab → choose `hotel_app/schema.sql` → Go.
-   - **Option B — command line** (paths vary by OS):
+3. **Database and tables**
+   - **First run of the GUI:** if MySQL is running with the defaults below, the app **creates** `hotel_management` and applies `hotel_app/schema.sql` automatically when the `hotel` table is missing.
+   - **Manual reset / class demo:** from this folder run `python create_schema.py` (always reapplies the full script, including `DROP TABLE`).
+
+   Other options:
+   - **phpMyAdmin** (often `http://localhost/phpmyadmin`): new database `hotel_management`, import `hotel_app/schema.sql`.
+   - **mysql** CLI (paths vary by OS):
 
      ```bash
      # Example: XAMPP’s mysql client on Windows (adjust path)
@@ -64,7 +68,16 @@ From this folder (`python-hotel-project/`):
 ```bash
 python -m venv .venv
 source .venv/bin/activate   # Windows: .venv\Scripts\activate
-pip install -r requirements.txt
+python -m pip install -r requirements.txt
+```
+
+Use **`python -m pip`** (not plain `pip`) so packages install into the **same** interpreter as `python`. On macOS with Conda, Homebrew, and python.org installed, `pip` and `python` often point to different versions — that causes `ModuleNotFoundError: No module named 'mysql'`.
+
+Check they match:
+
+```bash
+which python
+python -m pip --version   # should show the same Python base path
 ```
 
 ## Environment variables
@@ -101,7 +114,10 @@ On startup, the app runs a simple `SELECT 1` against the database; if that fails
 
 | Path | Purpose |
 |------|---------|
+| [QUICKSTART.md](QUICKSTART.md) | Short run instructions (start here) |
+| `create_schema.py` | CLI: always reapplies full `schema.sql` (reset / demo) |
 | `hotel_app/schema.sql` | Tables, FKs, and constraints |
+| `hotel_app/schema_setup.py` | First-run: create DB if missing, apply schema if no `hotel` table |
 | `hotel_app/main.py` | Window, tabbed notebook, tab refresh on switch |
 | `hotel_app/config.py` | Environment-based DB settings |
 | `hotel_app/db.py` | `get_connection()` context manager |
@@ -110,8 +126,9 @@ On startup, the app runs a simple `SELECT 1` against the database; if that fails
 ## Troubleshooting (XAMPP)
 
 - **`Can't connect to MySQL server`** — Start MySQL in XAMPP; confirm port 3306 is not blocked or changed.
+- **`ModuleNotFoundError: No module named 'mysql'`** — `pip` installed into a different Python than the one running the app. Run `python -m pip install -r requirements.txt` (same `python` you use for `python -m hotel_app.main`), or activate your venv first, or use `conda install -c conda-forge mysql-connector-python` if you run everything under Conda.
 - **`Access denied for user 'root'`** — Set `HOTEL_DB_USER` / `HOTEL_DB_PASSWORD` to match what you configured in XAMPP/phpMyAdmin.
-- **`Unknown database 'hotel_management'`** — Create the database and run `hotel_app/schema.sql` (see above).
+- **`Unknown database 'hotel_management'`** — On first launch the app should create it automatically. If you still see this, MySQL may not be reachable with the default user (check XAMPP). You can also run `python create_schema.py`.
 - **Tab refreshes when you switch** — Designed so pick-lists stay in sync after changes in other tabs; use **Refresh** on a tab if data looks stale.
 
 ## License / course use
