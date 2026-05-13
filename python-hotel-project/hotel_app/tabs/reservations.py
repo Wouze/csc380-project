@@ -1,21 +1,20 @@
-from __future__ import annotations
 
 import datetime as dt
 import tkinter as tk
 from tkinter import messagebox, ttk
 
 from hotel_app.db import get_connection
-from hotel_app.tabs.common import TabBuild, clear_tree, parse_decimal, show_db_error
+from hotel_app.tabs.common import clear_tree, parse_decimal, show_db_error
 
 
-def _parse_date(s: str, label: str) -> dt.date:
+def _parse_date(s, label) -> dt.date:
     v = s.strip()
     if not v:
         raise ValueError(f"{label} is required (YYYY-MM-DD).")
     return dt.datetime.strptime(v, "%Y-%m-%d").date()
 
 
-def build(parent: tk.Misc) -> TabBuild:
+def build(parent) :
     frame = ttk.Frame(parent, padding=8)
 
     paned = ttk.Panedwindow(frame, orient="horizontal")
@@ -62,18 +61,19 @@ def build(parent: tk.Misc) -> TabBuild:
 
     ttk.Label(left, text="(Dates: YYYY-MM-DD)", foreground="gray").grid(row=7, column=1, sticky="w")
 
-    def load_guests_combo() -> None:
+    def load_guests_combo() :
         try:
-            with get_connection() as cn:
-                cur = cn.cursor()
-                cur.execute(
-                    """
-                    SELECT guest_id, first_name, last_name
-                    FROM guest
-                    ORDER BY guest_id
-                    """
-                )
-                rows = cur.fetchall()
+            cn = get_connection()
+            cur = cn.cursor()
+            cur.execute(
+                """
+                SELECT guest_id, first_name, last_name
+                FROM guest
+                ORDER BY guest_id
+                """
+            )
+            rows = cur.fetchall()
+            cn.close()
             guest_combo["values"] = [f"{r[0]} — {r[1]} {r[2]}" for r in rows]
         except Exception as exc:
             show_db_error(left, exc)
@@ -97,7 +97,7 @@ def build(parent: tk.Misc) -> TabBuild:
     left.rowconfigure(9, weight=1)
     left.columnconfigure(1, weight=1)
 
-    def clear_res_form() -> None:
+    def clear_res_form() :
         res_id_var.set("")
         booking_var.set("")
         in_var.set("")
@@ -105,30 +105,31 @@ def build(parent: tk.Misc) -> TabBuild:
         status_var.set("confirmed")
         guest_var.set("")
 
-    def rr_refresh_for(reservation_id: int | None) -> None:
+    def rr_refresh_for(reservation_id) :
         clear_tree(rr_tree)
         if reservation_id is None:
             return
         try:
-            with get_connection() as cn:
-                cur = cn.cursor()
-                cur.execute(
-                    """
-                    SELECT rr.room_id, r.room_number, rr.price_at_booking, r.hotel_id
-                    FROM reservation_room rr
-                    JOIN room r ON r.room_id = rr.room_id
-                    WHERE rr.reservation_id = %s
-                    ORDER BY rr.room_id
-                    """,
-                    (reservation_id,),
-                )
-                rows = cur.fetchall()
+            cn = get_connection()
+            cur = cn.cursor()
+            cur.execute(
+                """
+                SELECT rr.room_id, r.room_number, rr.price_at_booking, r.hotel_id
+                FROM reservation_room rr
+                JOIN room r ON r.room_id = rr.room_id
+                WHERE rr.reservation_id = %s
+                ORDER BY rr.room_id
+                """,
+                (reservation_id,),
+            )
+            rows = cur.fetchall()
+            cn.close()
             for r in rows:
                 rr_tree.insert("", tk.END, iid=str(r[0]), values=r)
         except Exception as exc:
             show_db_error(right, exc)
 
-    def load_res_row(_e=None) -> None:
+    def load_res_row(_e=None) :
         sel = res_tree.selection()
         if not sel:
             rr_refresh_for(None)
@@ -145,20 +146,21 @@ def build(parent: tk.Misc) -> TabBuild:
 
     res_tree.bind("<<TreeviewSelect>>", load_res_row)
 
-    def refresh_reservations() -> None:
+    def refresh_reservations() :
         load_guests_combo()
         load_hotels_rr()
         try:
-            with get_connection() as cn:
-                cur = cn.cursor()
-                cur.execute(
-                    """
-                    SELECT reservation_id, guest_id, booking_date, check_in_date, check_out_date, status
-                    FROM reservation
-                    ORDER BY reservation_id
-                    """
-                )
-                rows = cur.fetchall()
+            cn = get_connection()
+            cur = cn.cursor()
+            cur.execute(
+                """
+                SELECT reservation_id, guest_id, booking_date, check_in_date, check_out_date, status
+                FROM reservation
+                ORDER BY reservation_id
+                """
+            )
+            rows = cur.fetchall()
+            cn.close()
             clear_tree(res_tree)
             for r in rows:
                 res_tree.insert("", tk.END, iid=str(r[0]), values=r)
@@ -184,7 +186,7 @@ def build(parent: tk.Misc) -> TabBuild:
             return False
         return True
 
-    def insert_reservation() -> None:
+    def insert_reservation() :
         try:
             b = _parse_date(booking_var.get(), "Booking date")
             ci = _parse_date(in_var.get(), "Check-in date")
@@ -192,16 +194,17 @@ def build(parent: tk.Misc) -> TabBuild:
             if not validate_dates(b, ci, co):
                 return
             gid = parse_guest_id()
-            with get_connection() as cn:
-                cur = cn.cursor()
-                cur.execute(
-                    """
-                    INSERT INTO reservation (booking_date, check_in_date, check_out_date, status, guest_id)
-                    VALUES (%s,%s,%s,%s,%s)
-                    """,
-                    (b, ci, co, status_var.get(), gid),
-                )
-                cn.commit()
+            cn = get_connection()
+            cur = cn.cursor()
+            cur.execute(
+                """
+                INSERT INTO reservation (booking_date, check_in_date, check_out_date, status, guest_id)
+                VALUES (%s,%s,%s,%s,%s)
+                """,
+                (b, ci, co, status_var.get(), gid),
+            )
+            cn.commit()
+            cn.close()
             messagebox.showinfo("Reservations", "Reservation created.", parent=left)
             refresh_reservations()
         except ValueError as ve:
@@ -209,7 +212,7 @@ def build(parent: tk.Misc) -> TabBuild:
         except Exception as exc:
             show_db_error(left, exc)
 
-    def update_reservation() -> None:
+    def update_reservation() :
         rid = res_id_var.get().strip()
         if not rid:
             messagebox.showwarning("Reservations", "Select a reservation to update.", parent=left)
@@ -221,17 +224,18 @@ def build(parent: tk.Misc) -> TabBuild:
             if not validate_dates(b, ci, co):
                 return
             gid = parse_guest_id()
-            with get_connection() as cn:
-                cur = cn.cursor()
-                cur.execute(
-                    """
-                    UPDATE reservation
-                    SET booking_date=%s, check_in_date=%s, check_out_date=%s, status=%s, guest_id=%s
-                    WHERE reservation_id=%s
-                    """,
-                    (b, ci, co, status_var.get(), gid, int(rid)),
-                )
-                cn.commit()
+            cn = get_connection()
+            cur = cn.cursor()
+            cur.execute(
+                """
+                UPDATE reservation
+                SET booking_date=%s, check_in_date=%s, check_out_date=%s, status=%s, guest_id=%s
+                WHERE reservation_id=%s
+                """,
+                (b, ci, co, status_var.get(), gid, int(rid)),
+            )
+            cn.commit()
+            cn.close()
             messagebox.showinfo("Reservations", "Reservation updated.", parent=left)
             refresh_reservations()
         except ValueError as ve:
@@ -239,7 +243,7 @@ def build(parent: tk.Misc) -> TabBuild:
         except Exception as exc:
             show_db_error(left, exc)
 
-    def delete_reservation() -> None:
+    def delete_reservation() :
         rid = res_id_var.get().strip()
         if not rid:
             messagebox.showwarning("Reservations", "Select a reservation to delete.", parent=left)
@@ -251,10 +255,11 @@ def build(parent: tk.Misc) -> TabBuild:
         ):
             return
         try:
-            with get_connection() as cn:
-                cur = cn.cursor()
-                cur.execute("DELETE FROM reservation WHERE reservation_id=%s", (int(rid),))
-                cn.commit()
+            cn = get_connection()
+            cur = cn.cursor()
+            cur.execute("DELETE FROM reservation WHERE reservation_id=%s", (int(rid),))
+            cn.commit()
+            cn.close()
             messagebox.showinfo("Reservations", "Reservation deleted.", parent=left)
             refresh_reservations()
         except Exception as exc:
@@ -313,12 +318,13 @@ def build(parent: tk.Misc) -> TabBuild:
             raise ValueError("Select a room.")
         return int(txt.split("—", 1)[0].strip())
 
-    def load_hotels_rr() -> None:
+    def load_hotels_rr() :
         try:
-            with get_connection() as cn:
-                cur = cn.cursor()
-                cur.execute("SELECT hotel_id, name FROM hotel ORDER BY hotel_id")
-                rows = cur.fetchall()
+            cn = get_connection()
+            cur = cn.cursor()
+            cur.execute("SELECT hotel_id, name FROM hotel ORDER BY hotel_id")
+            rows = cur.fetchall()
+            cn.close()
             hotel_rr_combo["values"] = [f"{r[0]} — {r[1]}" for r in rows]
             if hotel_rr_combo["values"] and not hotel_rr_var.get():
                 hotel_rr_combo.current(0)
@@ -326,21 +332,22 @@ def build(parent: tk.Misc) -> TabBuild:
         except Exception as exc:
             show_db_error(right, exc)
 
-    def refresh_rooms_for_hotel(_e=None) -> None:
+    def refresh_rooms_for_hotel(_e=None) :
         try:
             hid = parse_hotel_id_rr()
-            with get_connection() as cn:
-                cur = cn.cursor()
-                cur.execute(
-                    """
-                    SELECT room_id, room_number, room_type, price_per_night
-                    FROM room
-                    WHERE hotel_id=%s
-                    ORDER BY room_number
-                    """,
-                    (hid,),
-                )
-                rows = cur.fetchall()
+            cn = get_connection()
+            cur = cn.cursor()
+            cur.execute(
+                """
+                SELECT room_id, room_number, room_type, price_per_night
+                FROM room
+                WHERE hotel_id=%s
+                ORDER BY room_number
+                """,
+                (hid,),
+            )
+            rows = cur.fetchall()
+            cn.close()
             room_pick_combo["values"] = [
                 f"{r[0]} — #{r[1]} ({r[2]}, {r[3]}/night)" for r in rows
             ]
@@ -356,7 +363,7 @@ def build(parent: tk.Misc) -> TabBuild:
 
     hotel_rr_combo.bind("<<ComboboxSelected>>", refresh_rooms_for_hotel)
 
-    def rr_add_line() -> None:
+    def rr_add_line() :
         rid = res_id_var.get().strip()
         if not rid:
             messagebox.showwarning("Reservations", "Select a reservation first.", parent=right)
@@ -364,16 +371,17 @@ def build(parent: tk.Misc) -> TabBuild:
         try:
             roid = parse_room_pick_id()
             price = parse_decimal(rr_price_var.get(), "Price at booking")
-            with get_connection() as cn:
-                cur = cn.cursor()
-                cur.execute(
-                    """
-                    INSERT INTO reservation_room (reservation_id, room_id, price_at_booking)
-                    VALUES (%s,%s,%s)
-                    """,
-                    (int(rid), roid, price),
-                )
-                cn.commit()
+            cn = get_connection()
+            cur = cn.cursor()
+            cur.execute(
+                """
+                INSERT INTO reservation_room (reservation_id, room_id, price_at_booking)
+                VALUES (%s,%s,%s)
+                """,
+                (int(rid), roid, price),
+            )
+            cn.commit()
+            cn.close()
             messagebox.showinfo("Reservations", "Room line added.", parent=right)
             rr_refresh_for(int(rid))
         except ValueError as ve:
@@ -381,7 +389,7 @@ def build(parent: tk.Misc) -> TabBuild:
         except Exception as exc:
             show_db_error(right, exc)
 
-    def rr_delete_line() -> None:
+    def rr_delete_line() :
         rid = res_id_var.get().strip()
         if not rid:
             messagebox.showwarning("Reservations", "Select a reservation.", parent=right)
@@ -394,13 +402,14 @@ def build(parent: tk.Misc) -> TabBuild:
         if not messagebox.askyesno("Reservations", "Remove this room from the reservation?", parent=right):
             return
         try:
-            with get_connection() as cn:
-                cur = cn.cursor()
-                cur.execute(
-                    "DELETE FROM reservation_room WHERE reservation_id=%s AND room_id=%s",
-                    (int(rid), int(room_id)),
-                )
-                cn.commit()
+            cn = get_connection()
+            cur = cn.cursor()
+            cur.execute(
+                "DELETE FROM reservation_room WHERE reservation_id=%s AND room_id=%s",
+                (int(rid), int(room_id)),
+            )
+            cn.commit()
+            cn.close()
             messagebox.showinfo("Reservations", "Room line removed.", parent=right)
             rr_refresh_for(int(rid))
         except Exception as exc:
@@ -412,4 +421,6 @@ def build(parent: tk.Misc) -> TabBuild:
     ttk.Button(rrb, text="Remove selected line", command=rr_delete_line).pack(side="left")
 
     refresh_reservations()
-    return frame, refresh_reservations
+    frame.bind('<Visibility>', lambda e: refresh())
+    refresh()
+    return frame_reservations

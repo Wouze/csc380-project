@@ -1,21 +1,20 @@
-from __future__ import annotations
 
 import datetime as dt
 import tkinter as tk
 from tkinter import messagebox, ttk
 
 from hotel_app.db import get_connection
-from hotel_app.tabs.common import TabBuild, clear_tree, parse_decimal, show_db_error
+from hotel_app.tabs.common import clear_tree, parse_decimal, show_db_error
 
 
-def _parse_date(s: str, label: str) -> dt.date:
+def _parse_date(s, label) -> dt.date:
     v = s.strip()
     if not v:
         raise ValueError(f"{label} is required (YYYY-MM-DD).")
     return dt.datetime.strptime(v, "%Y-%m-%d").date()
 
 
-def build(parent: tk.Misc) -> TabBuild:
+def build(parent) :
     frame = ttk.Frame(parent, padding=8)
     frame.columnconfigure(1, weight=1)
     frame.rowconfigure(9, weight=1)  # tree row expands
@@ -75,17 +74,18 @@ def build(parent: tk.Misc) -> TabBuild:
             raise ValueError("Hotel is required.")
         return int(txt.split("—", 1)[0].strip())
 
-    def load_hotels() -> None:
+    def load_hotels() :
         try:
-            with get_connection() as cn:
-                cur = cn.cursor()
-                cur.execute("SELECT hotel_id, name FROM hotel ORDER BY hotel_id")
-                rows = cur.fetchall()
+            cn = get_connection()
+            cur = cn.cursor()
+            cur.execute("SELECT hotel_id, name FROM hotel ORDER BY hotel_id")
+            rows = cur.fetchall()
+            cn.close()
             hotel_combo["values"] = [f"{r[0]} — {r[1]}" for r in rows]
         except Exception as exc:
             show_db_error(frame, exc)
 
-    def clear_form() -> None:
+    def clear_form() :
         emp_id_var.set("")
         fn_var.set("")
         ln_var.set("")
@@ -94,7 +94,7 @@ def build(parent: tk.Misc) -> TabBuild:
         hire_var.set("")
         hotel_var.set("")
 
-    def fill_row(_e=None) -> None:
+    def fill_row(_e=None) :
         sel = tree.selection()
         if not sel:
             return
@@ -110,19 +110,20 @@ def build(parent: tk.Misc) -> TabBuild:
 
     tree.bind("<<TreeviewSelect>>", fill_row)
 
-    def refresh() -> None:
+    def refresh() :
         load_hotels()
         try:
-            with get_connection() as cn:
-                cur = cn.cursor()
-                cur.execute(
-                    """
-                    SELECT employee_id, first_name, last_name, role, salary, hire_date, hotel_id
-                    FROM employee
-                    ORDER BY employee_id
-                    """
-                )
-                rows = cur.fetchall()
+            cn = get_connection()
+            cur = cn.cursor()
+            cur.execute(
+                """
+                SELECT employee_id, first_name, last_name, role, salary, hire_date, hotel_id
+                FROM employee
+                ORDER BY employee_id
+                """
+            )
+            rows = cur.fetchall()
+            cn.close()
             clear_tree(tree)
             for r in rows:
                 tree.insert("", tk.END, iid=str(r[0]), values=r)
@@ -130,21 +131,22 @@ def build(parent: tk.Misc) -> TabBuild:
         except Exception as exc:
             show_db_error(frame, exc)
 
-    def insert() -> None:
+    def insert() :
         try:
             sal = parse_decimal(sal_var.get(), "Salary")
             hd = _parse_date(hire_var.get(), "Hire date")
             hid = parse_hotel_id()
-            with get_connection() as cn:
-                cur = cn.cursor()
-                cur.execute(
-                    """
-                    INSERT INTO employee (first_name, last_name, role, salary, hire_date, hotel_id)
-                    VALUES (%s,%s,%s,%s,%s,%s)
-                    """,
-                    (fn_var.get().strip(), ln_var.get().strip(), role_var.get(), sal, hd, hid),
-                )
-                cn.commit()
+            cn = get_connection()
+            cur = cn.cursor()
+            cur.execute(
+                """
+                INSERT INTO employee (first_name, last_name, role, salary, hire_date, hotel_id)
+                VALUES (%s,%s,%s,%s,%s,%s)
+                """,
+                (fn_var.get().strip(), ln_var.get().strip(), role_var.get(), sal, hd, hid),
+            )
+            cn.commit()
+            cn.close()
             messagebox.showinfo("Employees", "Employee inserted.", parent=frame)
             refresh()
         except ValueError as ve:
@@ -152,7 +154,7 @@ def build(parent: tk.Misc) -> TabBuild:
         except Exception as exc:
             show_db_error(frame, exc)
 
-    def update_row() -> None:
+    def update_row() :
         iid = emp_id_var.get().strip()
         if not iid:
             messagebox.showwarning("Employees", "Select an employee to update.", parent=frame)
@@ -161,24 +163,25 @@ def build(parent: tk.Misc) -> TabBuild:
             sal = parse_decimal(sal_var.get(), "Salary")
             hd = _parse_date(hire_var.get(), "Hire date")
             hid = parse_hotel_id()
-            with get_connection() as cn:
-                cur = cn.cursor()
-                cur.execute(
-                    """
-                    UPDATE employee SET first_name=%s, last_name=%s, role=%s, salary=%s, hire_date=%s, hotel_id=%s
-                    WHERE employee_id=%s
-                    """,
-                    (
-                        fn_var.get().strip(),
-                        ln_var.get().strip(),
-                        role_var.get(),
-                        sal,
-                        hd,
-                        hid,
-                        int(iid),
-                    ),
-                )
-                cn.commit()
+            cn = get_connection()
+            cur = cn.cursor()
+            cur.execute(
+                """
+                UPDATE employee SET first_name=%s, last_name=%s, role=%s, salary=%s, hire_date=%s, hotel_id=%s
+                WHERE employee_id=%s
+                """,
+                (
+                    fn_var.get().strip(),
+                    ln_var.get().strip(),
+                    role_var.get(),
+                    sal,
+                    hd,
+                    hid,
+                    int(iid),
+                ),
+            )
+            cn.commit()
+            cn.close()
             messagebox.showinfo("Employees", "Employee updated.", parent=frame)
             refresh()
         except ValueError as ve:
@@ -186,7 +189,7 @@ def build(parent: tk.Misc) -> TabBuild:
         except Exception as exc:
             show_db_error(frame, exc)
 
-    def delete_row() -> None:
+    def delete_row() :
         iid = emp_id_var.get().strip()
         if not iid:
             messagebox.showwarning("Employees", "Select an employee to delete.", parent=frame)
@@ -194,10 +197,11 @@ def build(parent: tk.Misc) -> TabBuild:
         if not messagebox.askyesno("Employees", "Delete this employee?", parent=frame):
             return
         try:
-            with get_connection() as cn:
-                cur = cn.cursor()
-                cur.execute("DELETE FROM employee WHERE employee_id=%s", (int(iid),))
-                cn.commit()
+            cn = get_connection()
+            cur = cn.cursor()
+            cur.execute("DELETE FROM employee WHERE employee_id=%s", (int(iid),))
+            cn.commit()
+            cn.close()
             messagebox.showinfo("Employees", "Employee deleted.", parent=frame)
             refresh()
         except Exception as exc:
@@ -211,4 +215,6 @@ def build(parent: tk.Misc) -> TabBuild:
     ttk.Button(btns, text="Refresh", command=refresh).pack(side="left", padx=6)
 
     refresh()
-    return frame, refresh
+    frame.bind('<Visibility>', lambda e: refresh())
+    refresh()
+    return frame

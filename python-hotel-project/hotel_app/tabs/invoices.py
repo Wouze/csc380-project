@@ -1,21 +1,20 @@
-from __future__ import annotations
 
 import datetime as dt
 import tkinter as tk
 from tkinter import messagebox, ttk
 
 from hotel_app.db import get_connection
-from hotel_app.tabs.common import TabBuild, clear_tree, parse_decimal, show_db_error
+from hotel_app.tabs.common import clear_tree, parse_decimal, show_db_error
 
 
-def _parse_date(s: str, label: str) -> dt.date:
+def _parse_date(s, label) -> dt.date:
     v = s.strip()
     if not v:
         raise ValueError(f"{label} is required (YYYY-MM-DD).")
     return dt.datetime.strptime(v, "%Y-%m-%d").date()
 
 
-def build(parent: tk.Misc) -> TabBuild:
+def build(parent) :
     frame = ttk.Frame(parent, padding=8)
     frame.columnconfigure(1, weight=1)
     frame.rowconfigure(9, weight=1)
@@ -72,53 +71,55 @@ def build(parent: tk.Misc) -> TabBuild:
     scroll.grid(row=9, column=4, sticky="ns", pady=8)
     tree.configure(yscrollcommand=scroll.set)
 
-    def format_res_rows(rows: list[tuple]) -> list[str]:
+    def format_res_rows(rows) -> list[str]:
         """rows: reservation_id, first_name, last_name."""
         return [f"{r[0]} — {r[1]} {r[2]}" for r in rows]
 
-    def load_open_reservations() -> None:
+    def load_open_reservations() :
         try:
-            with get_connection() as cn:
-                cur = cn.cursor()
-                cur.execute(
-                    """
-                    SELECT r.reservation_id, g.first_name, g.last_name
-                    FROM reservation r
-                    JOIN guest g ON g.guest_id = r.guest_id
-                    LEFT JOIN invoice i ON i.reservation_id = r.reservation_id
-                    WHERE i.invoice_id IS NULL
-                    ORDER BY r.reservation_id
-                    """
-                )
-                free = cur.fetchall()
+            cn = get_connection()
+            cur = cn.cursor()
+            cur.execute(
+                """
+                SELECT r.reservation_id, g.first_name, g.last_name
+                FROM reservation r
+                JOIN guest g ON g.guest_id = r.guest_id
+                LEFT JOIN invoice i ON i.reservation_id = r.reservation_id
+                WHERE i.invoice_id IS NULL
+                ORDER BY r.reservation_id
+                """
+            )
+            free = cur.fetchall()
+            cn.close()
             res_combo["values"] = format_res_rows(free)
             res_combo.configure(state="readonly")
             res_var.set("")
         except Exception as exc:
             show_db_error(frame, exc)
 
-    def load_res_combo_for_existing(reservation_id: int) -> None:
+    def load_res_combo_for_existing(reservation_id) :
         try:
-            with get_connection() as cn:
-                cur = cn.cursor()
-                cur.execute(
-                    """
-                    SELECT r.reservation_id, g.first_name, g.last_name
-                    FROM reservation r
-                    JOIN guest g ON g.guest_id = r.guest_id
-                    WHERE r.reservation_id=%s
-                    """,
-                    (reservation_id,),
-                )
-                row = cur.fetchone()
-                if row:
-                    res_combo["values"] = format_res_rows([row])
-                    res_combo.set(format_res_rows([row])[0])
+            cn = get_connection()
+            cur = cn.cursor()
+            cur.execute(
+                """
+                SELECT r.reservation_id, g.first_name, g.last_name
+                FROM reservation r
+                JOIN guest g ON g.guest_id = r.guest_id
+                WHERE r.reservation_id=%s
+                """,
+                (reservation_id,),
+            )
+            row = cur.fetchone()
+            if row:
+                res_combo["values"] = format_res_rows([row])
+                res_combo.set(format_res_rows([row])[0])
+            cn.close()
             res_combo.configure(state="disabled")
         except Exception as exc:
             show_db_error(frame, exc)
 
-    def clear_form_insert_mode() -> None:
+    def clear_form_insert_mode() :
         inv_id_var.set("")
         total_var.set("")
         pay_method_var.set("Cash")
@@ -127,7 +128,7 @@ def build(parent: tk.Misc) -> TabBuild:
         load_open_reservations()
         res_combo.configure(state="readonly")
 
-    def load_row(_e=None) -> None:
+    def load_row(_e=None) :
         sel = tree.selection()
         if not sel:
             return
@@ -142,18 +143,19 @@ def build(parent: tk.Misc) -> TabBuild:
 
     tree.bind("<<TreeviewSelect>>", load_row)
 
-    def refresh() -> None:
+    def refresh() :
         try:
-            with get_connection() as cn:
-                cur = cn.cursor()
-                cur.execute(
-                    """
-                    SELECT invoice_id, reservation_id, total_amount, payment_method, payment_status, issue_date
-                    FROM invoice
-                    ORDER BY invoice_id
-                    """
-                )
-                rows = cur.fetchall()
+            cn = get_connection()
+            cur = cn.cursor()
+            cur.execute(
+                """
+                SELECT invoice_id, reservation_id, total_amount, payment_method, payment_status, issue_date
+                FROM invoice
+                ORDER BY invoice_id
+                """
+            )
+            rows = cur.fetchall()
+            cn.close()
             clear_tree(tree)
             for r in rows:
                 tree.insert("", tk.END, iid=str(r[0]), values=r)
@@ -170,7 +172,7 @@ def build(parent: tk.Misc) -> TabBuild:
             raise ValueError("Reservation is required.")
         return int(txt.split("—", 1)[0].strip())
 
-    def insert_inv() -> None:
+    def insert_inv() :
         try:
             if inv_id_var.get().strip():
                 messagebox.showinfo("Invoices", "Clear selection to insert.", parent=frame)
@@ -178,16 +180,17 @@ def build(parent: tk.Misc) -> TabBuild:
             rid = parse_res_id()
             total = parse_decimal(total_var.get(), "Total amount")
             issue_date = _parse_date(issue_var.get(), "Issue date")
-            with get_connection() as cn:
-                cur = cn.cursor()
-                cur.execute(
-                    """
-                    INSERT INTO invoice (reservation_id, total_amount, payment_method, payment_status, issue_date)
-                    VALUES (%s,%s,%s,%s,%s)
-                    """,
-                    (rid, total, pay_method_var.get(), pay_status_var.get(), issue_date),
-                )
-                cn.commit()
+            cn = get_connection()
+            cur = cn.cursor()
+            cur.execute(
+                """
+                INSERT INTO invoice (reservation_id, total_amount, payment_method, payment_status, issue_date)
+                VALUES (%s,%s,%s,%s,%s)
+                """,
+                (rid, total, pay_method_var.get(), pay_status_var.get(), issue_date),
+            )
+            cn.commit()
+            cn.close()
             messagebox.showinfo("Invoices", "Invoice inserted.", parent=frame)
             refresh()
         except ValueError as ve:
@@ -195,7 +198,7 @@ def build(parent: tk.Misc) -> TabBuild:
         except Exception as exc:
             show_db_error(frame, exc)
 
-    def update_inv() -> None:
+    def update_inv() :
         iid = inv_id_var.get().strip()
         if not iid:
             messagebox.showwarning("Invoices", "Select an invoice to update.", parent=frame)
@@ -209,23 +212,24 @@ def build(parent: tk.Misc) -> TabBuild:
         try:
             total = parse_decimal(total_var.get(), "Total amount")
             issue_date = _parse_date(issue_var.get(), "Issue date")
-            with get_connection() as cn:
-                cur = cn.cursor()
-                cur.execute(
-                    """
-                    UPDATE invoice SET total_amount=%s, payment_method=%s, payment_status=%s, issue_date=%s
-                    WHERE invoice_id=%s AND reservation_id=%s
-                    """,
-                    (
-                        total,
-                        pay_method_var.get(),
-                        pay_status_var.get(),
-                        issue_date,
-                        int(iid),
-                        rid,
-                    ),
-                )
-                cn.commit()
+            cn = get_connection()
+            cur = cn.cursor()
+            cur.execute(
+                """
+                UPDATE invoice SET total_amount=%s, payment_method=%s, payment_status=%s, issue_date=%s
+                WHERE invoice_id=%s AND reservation_id=%s
+                """,
+                (
+                    total,
+                    pay_method_var.get(),
+                    pay_status_var.get(),
+                    issue_date,
+                    int(iid),
+                    rid,
+                ),
+            )
+            cn.commit()
+            cn.close()
             messagebox.showinfo("Invoices", "Invoice updated.", parent=frame)
             refresh()
         except ValueError as ve:
@@ -233,7 +237,7 @@ def build(parent: tk.Misc) -> TabBuild:
         except Exception as exc:
             show_db_error(frame, exc)
 
-    def delete_inv() -> None:
+    def delete_inv() :
         iid = inv_id_var.get().strip()
         if not iid:
             messagebox.showwarning("Invoices", "Select an invoice.", parent=frame)
@@ -241,10 +245,11 @@ def build(parent: tk.Misc) -> TabBuild:
         if not messagebox.askyesno("Invoices", "Delete this invoice?", parent=frame):
             return
         try:
-            with get_connection() as cn:
-                cur = cn.cursor()
-                cur.execute("DELETE FROM invoice WHERE invoice_id=%s", (int(iid),))
-                cn.commit()
+            cn = get_connection()
+            cur = cn.cursor()
+            cur.execute("DELETE FROM invoice WHERE invoice_id=%s", (int(iid),))
+            cn.commit()
+            cn.close()
             messagebox.showinfo("Invoices", "Invoice deleted.", parent=frame)
             refresh()
         except Exception as exc:
@@ -258,7 +263,7 @@ def build(parent: tk.Misc) -> TabBuild:
     ttk.Button(btns, text="Refresh", command=refresh).pack(side="left", padx=6)
 
     # New invoice (unlock reservation combo): user deselect tree + clear isn't obvious — Clear form button:
-    def new_invoice_form() -> None:
+    def new_invoice_form() :
         sel_rm = tree.selection()
         if sel_rm:
             tree.selection_remove(*sel_rm)
@@ -267,4 +272,6 @@ def build(parent: tk.Misc) -> TabBuild:
     ttk.Button(btns, text="New invoice", command=new_invoice_form).pack(side="left", padx=12)
 
     refresh()
-    return frame, refresh
+    frame.bind('<Visibility>', lambda e: refresh())
+    refresh()
+    return frame

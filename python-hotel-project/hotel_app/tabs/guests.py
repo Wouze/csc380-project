@@ -1,13 +1,12 @@
-from __future__ import annotations
 
 import tkinter as tk
 from tkinter import messagebox, ttk
 
 from hotel_app.db import get_connection
-from hotel_app.tabs.common import TabBuild, clear_tree, show_db_error
+from hotel_app.tabs.common import clear_tree, show_db_error
 
 
-def build(parent: tk.Misc) -> TabBuild:
+def build(parent) :
     frame = ttk.Frame(parent, padding=8)
     frame.columnconfigure(1, weight=1)
     frame.rowconfigure(8, weight=1)
@@ -53,7 +52,7 @@ def build(parent: tk.Misc) -> TabBuild:
     scroll.grid(row=8, column=3, sticky="ns", pady=8)
     tree.configure(yscrollcommand=scroll.set)
 
-    def load_row(_e=None) -> None:
+    def load_row(_e=None) :
         sel = tree.selection()
         if not sel:
             return
@@ -67,7 +66,7 @@ def build(parent: tk.Misc) -> TabBuild:
 
     tree.bind("<<TreeviewSelect>>", load_row)
 
-    def clear_form() -> None:
+    def clear_form() :
         gid_var.set("")
         fn_var.set("")
         ln_var.set("")
@@ -75,18 +74,19 @@ def build(parent: tk.Misc) -> TabBuild:
         phone_var.set("")
         nation_var.set("")
 
-    def refresh() -> None:
+    def refresh() :
         try:
-            with get_connection() as cn:
-                cur = cn.cursor()
-                cur.execute(
-                    """
-                    SELECT guest_id, first_name, last_name, email, phone, nationality
-                    FROM guest
-                    ORDER BY guest_id
-                    """
-                )
-                rows = cur.fetchall()
+            cn = get_connection()
+            cur = cn.cursor()
+            cur.execute(
+                """
+                SELECT guest_id, first_name, last_name, email, phone, nationality
+                FROM guest
+                ORDER BY guest_id
+                """
+            )
+            rows = cur.fetchall()
+            cn.close()
             clear_tree(tree)
             for r in rows:
                 tree.insert("", tk.END, iid=str(r[0]), values=r)
@@ -94,22 +94,23 @@ def build(parent: tk.Misc) -> TabBuild:
         except Exception as exc:
             show_db_error(frame, exc)
 
-    def search_id() -> None:
+    def search_id() :
         sid = search_var.get().strip()
         if not sid:
             refresh()
             return
         try:
-            with get_connection() as cn:
-                cur = cn.cursor()
-                cur.execute(
-                    """
-                    SELECT guest_id, first_name, last_name, email, phone, nationality
-                    FROM guest WHERE guest_id=%s
-                    """,
-                    (int(sid),),
-                )
-                rows = cur.fetchall()
+            cn = get_connection()
+            cur = cn.cursor()
+            cur.execute(
+                """
+                SELECT guest_id, first_name, last_name, email, phone, nationality
+                FROM guest WHERE guest_id=%s
+                """,
+                (int(sid),),
+            )
+            rows = cur.fetchall()
+            cn.close()
             clear_tree(tree)
             for r in rows:
                 tree.insert("", tk.END, iid=str(r[0]), values=r)
@@ -121,70 +122,73 @@ def build(parent: tk.Misc) -> TabBuild:
         except Exception as exc:
             show_db_error(frame, exc)
 
-    def insert_guest() -> None:
+    def insert_guest() :
         try:
             if not email_var.get().strip() or not phone_var.get().strip():
                 messagebox.showwarning("Guests", "Email and phone are required.", parent=frame)
                 return
-            with get_connection() as cn:
-                cur = cn.cursor()
-                cur.execute(
-                    """
-                    INSERT INTO guest (first_name, last_name, email, phone, nationality)
-                    VALUES (%s,%s,%s,%s,%s)
-                    """,
-                    (
-                        fn_var.get().strip(),
-                        ln_var.get().strip(),
-                        email_var.get().strip(),
-                        phone_var.get().strip(),
-                        nation_var.get().strip(),
-                    ),
-                )
-                cn.commit()
+            cn = get_connection()
+            cur = cn.cursor()
+            cur.execute(
+                """
+                INSERT INTO guest (first_name, last_name, email, phone, nationality)
+                VALUES (%s,%s,%s,%s,%s)
+                """,
+                (
+                    fn_var.get().strip(),
+                    ln_var.get().strip(),
+                    email_var.get().strip(),
+                    phone_var.get().strip(),
+                    nation_var.get().strip(),
+                ),
+            )
+            cn.commit()
+            cn.close()
             messagebox.showinfo("Guests", "Guest inserted.", parent=frame)
             refresh()
         except Exception as exc:
             show_db_error(frame, exc)
 
-    def update_guest() -> None:
+    def update_guest() :
         try:
             if not gid_var.get().strip():
                 messagebox.showwarning("Guests", "Select a guest to update.", parent=frame)
                 return
-            with get_connection() as cn:
-                cur = cn.cursor()
-                cur.execute(
-                    """
-                    UPDATE guest SET first_name=%s, last_name=%s, email=%s, phone=%s, nationality=%s
-                    WHERE guest_id=%s
-                    """,
-                    (
-                        fn_var.get().strip(),
-                        ln_var.get().strip(),
-                        email_var.get().strip(),
-                        phone_var.get().strip(),
-                        nation_var.get().strip(),
-                        int(gid_var.get()),
-                    ),
-                )
-                cn.commit()
+            cn = get_connection()
+            cur = cn.cursor()
+            cur.execute(
+                """
+                UPDATE guest SET first_name=%s, last_name=%s, email=%s, phone=%s, nationality=%s
+                WHERE guest_id=%s
+                """,
+                (
+                    fn_var.get().strip(),
+                    ln_var.get().strip(),
+                    email_var.get().strip(),
+                    phone_var.get().strip(),
+                    nation_var.get().strip(),
+                    int(gid_var.get()),
+                ),
+            )
+            cn.commit()
+            cn.close()
             messagebox.showinfo("Guests", "Guest updated.", parent=frame)
             refresh()
         except Exception as exc:
             show_db_error(frame, exc)
 
-    def delete_guest() -> None:
+    def delete_guest() :
         if not gid_var.get().strip():
             messagebox.showwarning("Guests", "Select a guest to delete.", parent=frame)
             return
         if not messagebox.askyesno("Guests", "Delete this guest? (Fails if reservations exist.)", parent=frame):
             return
         try:
-            with get_connection() as cn:
-                cur = cn.cursor()
-                cur.execute("DELETE FROM guest WHERE guest_id=%s", (int(gid_var.get()),))
-                cn.commit()
+            cn = get_connection()
+            cur = cn.cursor()
+            cur.execute("DELETE FROM guest WHERE guest_id=%s", (int(gid_var.get()),))
+            cn.commit()
+            cn.close()
             messagebox.showinfo("Guests", "Guest deleted.", parent=frame)
             refresh()
         except Exception as exc:
@@ -199,4 +203,6 @@ def build(parent: tk.Misc) -> TabBuild:
     ttk.Button(btns, text="Search", command=search_id).pack(side="left", padx=12)
 
     refresh()
-    return frame, refresh
+    frame.bind('<Visibility>', lambda e: refresh())
+    refresh()
+    return frame

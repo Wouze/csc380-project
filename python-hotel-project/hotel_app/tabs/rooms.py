@@ -1,13 +1,12 @@
-from __future__ import annotations
 
 import tkinter as tk
 from tkinter import messagebox, ttk
 
 from hotel_app.db import get_connection
-from hotel_app.tabs.common import TabBuild, clear_tree, parse_decimal, show_db_error
+from hotel_app.tabs.common import clear_tree, parse_decimal, show_db_error
 
 
-def build(parent: tk.Misc) -> TabBuild:
+def build(parent) :
     frame = ttk.Frame(parent, padding=8)
     frame.columnconfigure(1, weight=1)
 
@@ -22,12 +21,13 @@ def build(parent: tk.Misc) -> TabBuild:
     hotel_combo = ttk.Combobox(frame, textvariable=hotel_var, width=36, state="readonly")
     hotel_combo.grid(row=2, column=1, columnspan=2, sticky="we")
 
-    def load_hotels_combo() -> None:
+    def load_hotels_combo() :
         try:
-            with get_connection() as cn:
-                cur = cn.cursor()
-                cur.execute("SELECT hotel_id, name FROM hotel ORDER BY hotel_id")
-                rows = cur.fetchall()
+            cn = get_connection()
+            cur = cn.cursor()
+            cur.execute("SELECT hotel_id, name FROM hotel ORDER BY hotel_id")
+            rows = cur.fetchall()
+            cn.close()
             hotel_combo["values"] = [f"{r[0]} — {r[1]}" for r in rows]
             if hotel_combo["values"] and not hotel_var.get():
                 hotel_combo.current(0)
@@ -97,7 +97,7 @@ def build(parent: tk.Misc) -> TabBuild:
             raise ValueError("Hotel is required.")
         return int(text.split("—", 1)[0].strip())
 
-    def fill_from_row(_evt=None) -> None:
+    def fill_from_row(_evt=None) :
         sel = tree.selection()
         if not sel:
             return
@@ -114,7 +114,7 @@ def build(parent: tk.Misc) -> TabBuild:
 
     tree.bind("<<TreeviewSelect>>", fill_from_row)
 
-    def clear_form() -> None:
+    def clear_form() :
         room_id_var.set("")
         room_number_var.set("")
         floor_var.set("")
@@ -122,20 +122,21 @@ def build(parent: tk.Misc) -> TabBuild:
         cap_var.set("")
         hotel_var.set("")
 
-    def refresh() -> None:
+    def refresh() :
         load_hotels_combo()
         try:
-            with get_connection() as cn:
-                cur = cn.cursor()
-                cur.execute(
-                    """
-                    SELECT room_id, hotel_id, room_number, floor, room_type,
-                           price_per_night, max_capacity, status
-                    FROM room
-                    ORDER BY hotel_id, room_number
-                    """
-                )
-                rows = cur.fetchall()
+            cn = get_connection()
+            cur = cn.cursor()
+            cur.execute(
+                """
+                SELECT room_id, hotel_id, room_number, floor, room_type,
+                       price_per_night, max_capacity, status
+                FROM room
+                ORDER BY hotel_id, room_number
+                """
+            )
+            rows = cur.fetchall()
+            cn.close()
             clear_tree(tree)
             for r in rows:
                 tree.insert("", tk.END, iid=str(r[0]), values=r)
@@ -143,7 +144,7 @@ def build(parent: tk.Misc) -> TabBuild:
         except Exception as exc:
             show_db_error(frame, exc)
 
-    def insert_room() -> None:
+    def insert_room() :
         try:
             hid = parse_hotel_id()
             rn = room_number_var.get().strip()
@@ -153,17 +154,18 @@ def build(parent: tk.Misc) -> TabBuild:
             fl = int(floor_var.get().strip())
             price = parse_decimal(price_var.get(), "Price")
             cap = int(cap_var.get().strip())
-            with get_connection() as cn:
-                cur = cn.cursor()
-                cur.execute(
-                    """
-                    INSERT INTO room
-                    (room_number, floor, room_type, price_per_night, max_capacity, status, hotel_id)
-                    VALUES (%s,%s,%s,%s,%s,%s,%s)
-                    """,
-                    (rn, fl, room_type_var.get(), price, cap, status_var.get(), hid),
-                )
-                cn.commit()
+            cn = get_connection()
+            cur = cn.cursor()
+            cur.execute(
+                """
+                INSERT INTO room
+                (room_number, floor, room_type, price_per_night, max_capacity, status, hotel_id)
+                VALUES (%s,%s,%s,%s,%s,%s,%s)
+                """,
+                (rn, fl, room_type_var.get(), price, cap, status_var.get(), hid),
+            )
+            cn.commit()
+            cn.close()
             messagebox.showinfo("Rooms", "Room inserted.", parent=frame)
             refresh()
         except ValueError as ve:
@@ -171,7 +173,7 @@ def build(parent: tk.Misc) -> TabBuild:
         except Exception as exc:
             show_db_error(frame, exc)
 
-    def update_room() -> None:
+    def update_room() :
         try:
             rid = room_id_var.get().strip()
             if not rid:
@@ -182,17 +184,18 @@ def build(parent: tk.Misc) -> TabBuild:
             fl = int(floor_var.get().strip())
             price = parse_decimal(price_var.get(), "Price")
             cap = int(cap_var.get().strip())
-            with get_connection() as cn:
-                cur = cn.cursor()
-                cur.execute(
-                    """
-                    UPDATE room SET room_number=%s, floor=%s, room_type=%s, price_per_night=%s,
-                           max_capacity=%s, status=%s, hotel_id=%s
-                    WHERE room_id=%s
-                    """,
-                    (rn, fl, room_type_var.get(), price, cap, status_var.get(), hid, int(rid)),
-                )
-                cn.commit()
+            cn = get_connection()
+            cur = cn.cursor()
+            cur.execute(
+                """
+                UPDATE room SET room_number=%s, floor=%s, room_type=%s, price_per_night=%s,
+                       max_capacity=%s, status=%s, hotel_id=%s
+                WHERE room_id=%s
+                """,
+                (rn, fl, room_type_var.get(), price, cap, status_var.get(), hid, int(rid)),
+            )
+            cn.commit()
+            cn.close()
             messagebox.showinfo("Rooms", "Room updated.", parent=frame)
             refresh()
         except ValueError as ve:
@@ -200,7 +203,7 @@ def build(parent: tk.Misc) -> TabBuild:
         except Exception as exc:
             show_db_error(frame, exc)
 
-    def delete_room() -> None:
+    def delete_room() :
         rid = room_id_var.get().strip()
         if not rid:
             messagebox.showwarning("Rooms", "Select a room to delete.", parent=frame)
@@ -208,10 +211,11 @@ def build(parent: tk.Misc) -> TabBuild:
         if not messagebox.askyesno("Rooms", "Delete this room?", parent=frame):
             return
         try:
-            with get_connection() as cn:
-                cur = cn.cursor()
-                cur.execute("DELETE FROM room WHERE room_id=%s", (int(rid),))
-                cn.commit()
+            cn = get_connection()
+            cur = cn.cursor()
+            cur.execute("DELETE FROM room WHERE room_id=%s", (int(rid),))
+            cn.commit()
+            cn.close()
             messagebox.showinfo("Rooms", "Room deleted.", parent=frame)
             refresh()
         except Exception as exc:
@@ -225,4 +229,6 @@ def build(parent: tk.Misc) -> TabBuild:
     ttk.Button(btns, text="Refresh", command=refresh).pack(side="left", padx=6)
 
     refresh()
-    return frame, refresh
+    frame.bind('<Visibility>', lambda e: refresh())
+    refresh()
+    return frame

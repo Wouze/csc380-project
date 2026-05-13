@@ -1,45 +1,44 @@
-#!/usr/bin/env python3
-"""
-(Re)create the database and apply hotel_app/schema.sql (drops tables per script).
-
-Uses the same env vars as the GUI (XAMPP defaults: 127.0.0.1:3306, root, hotel_management).
-
-Run from python-hotel-project/:
-  python create_schema.py
-
-The GUI also auto-creates an empty DB and tables on first launch; use this script when you
-want a clean reset.
-"""
-
-from __future__ import annotations
-
 import sys
+import os
 from pathlib import Path
+import mysql.connector
 
-_ROOT = Path(__file__).resolve().parent
-if str(_ROOT) not in sys.path:
-    sys.path.insert(0, str(_ROOT))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from hotel_app.db import get_connection
 
-try:
-    import mysql.connector  # noqa: F401
-except ModuleNotFoundError:
-    print("Install dependencies first: python -m pip install -r requirements.txt", file=sys.stderr)
-    raise SystemExit(1) from None
+def main():
+    print("Creating schema...")
+    conn = get_connection(with_db=False)
+    cursor = conn.cursor()
+    cursor.execute("CREATE DATABASE IF NOT EXISTS hotel_management")
+    conn.commit()
+    conn.close()
 
-from hotel_app.config import settings  # noqa: E402
-from hotel_app.schema_setup import apply_full_schema_cli  # noqa: E402
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    schema_path = Path(__file__).resolve().parent / "hotel_app" / "schema.sql"
+    import re
+    with open(schema_path, "r", encoding="utf-8") as f:
+        sql = f.read()
 
+    # Strip comments to prevent syntax errors on execution
+    sql = re.sub(r"/\*.*?\*/", "", sql, flags=re.DOTALL)
+    out_lines = []
+    for line in sql.splitlines():
+        if "--" in line:
+            line = line[: line.index("--")]
+        out_lines.append(line)
+    sql = "\n".join(out_lines)
 
-def main() -> int:
-    print(f"Connecting as {settings.user!r} @ {settings.host}:{settings.port} (database {settings.database!r}) …")
-    try:
-        apply_full_schema_cli()
-    except Exception as e:
-        print(f"Failed: {e}", file=sys.stderr)
-        return 1
+    for statement in sql.split(";"):
+        if statement.strip():
+            cursor.execute(statement)
+    
+    conn.commit()
+    conn.close()
     print("Done. Run: python -m hotel_app.main")
-    return 0
-
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    main()
+

@@ -1,13 +1,12 @@
-from __future__ import annotations
 
 import tkinter as tk
 from tkinter import messagebox, ttk
 
 from hotel_app.db import get_connection
-from hotel_app.tabs.common import TabBuild, clear_tree, show_db_error
+from hotel_app.tabs.common import clear_tree, show_db_error
 
 
-def build(parent: tk.Misc) -> TabBuild:
+def build(parent) :
     frame = ttk.Frame(parent, padding=8)
     frame.columnconfigure(1, weight=1)
     frame.rowconfigure(6, weight=1)
@@ -45,7 +44,7 @@ def build(parent: tk.Misc) -> TabBuild:
     scroll.grid(row=6, column=3, sticky="ns", pady=8)
     tree.configure(yscrollcommand=scroll.set)
 
-    def load_row_to_form(_event=None) -> None:
+    def load_row_to_form(_event=None) :
         sel = tree.selection()
         if not sel:
             return
@@ -58,21 +57,22 @@ def build(parent: tk.Misc) -> TabBuild:
 
     tree.bind("<<TreeviewSelect>>", load_row_to_form)
 
-    def clear_form() -> None:
+    def clear_form() :
         hotel_id_var.set("")
         name_var.set("")
         address_var.set("")
         city_var.set("")
         phone_var.set("")
 
-    def refresh() -> None:
+    def refresh() :
         try:
-            with get_connection() as cn:
-                cur = cn.cursor()
-                cur.execute(
-                    "SELECT hotel_id, name, address, city, phone FROM hotel ORDER BY hotel_id"
-                )
-                rows = cur.fetchall()
+            cn = get_connection()
+            cur = cn.cursor()
+            cur.execute(
+                "SELECT hotel_id, name, address, city, phone FROM hotel ORDER BY hotel_id"
+            )
+            rows = cur.fetchall()
+            cn.close()
             clear_tree(tree)
             for r in rows:
                 tree.insert("", tk.END, iid=str(r[0]), values=r)
@@ -80,53 +80,55 @@ def build(parent: tk.Misc) -> TabBuild:
         except Exception as exc:
             show_db_error(frame, exc)
 
-    def insert_hotel() -> None:
+    def insert_hotel() :
         try:
             if not name_var.get().strip():
                 messagebox.showwarning("Validation", "Name is required.", parent=frame)
                 return
-            with get_connection() as cn:
-                cur = cn.cursor()
-                cur.execute(
-                    "INSERT INTO hotel (name, address, city, phone) VALUES (%s,%s,%s,%s)",
-                    (
-                        name_var.get().strip(),
-                        address_var.get().strip(),
-                        city_var.get().strip(),
-                        phone_var.get().strip(),
-                    ),
-                )
-                cn.commit()
+            cn = get_connection()
+            cur = cn.cursor()
+            cur.execute(
+                "INSERT INTO hotel (name, address, city, phone) VALUES (%s,%s,%s,%s)",
+                (
+                    name_var.get().strip(),
+                    address_var.get().strip(),
+                    city_var.get().strip(),
+                    phone_var.get().strip(),
+                ),
+            )
+            cn.commit()
+            cn.close()
             messagebox.showinfo("Hotels", "Hotel inserted.", parent=frame)
             refresh()
         except Exception as exc:
             show_db_error(frame, exc)
 
-    def update_hotel() -> None:
+    def update_hotel() :
         try:
             hid = hotel_id_var.get().strip()
             if not hid:
                 messagebox.showwarning("Hotels", "Select a hotel to update.", parent=frame)
                 return
-            with get_connection() as cn:
-                cur = cn.cursor()
-                cur.execute(
-                    "UPDATE hotel SET name=%s, address=%s, city=%s, phone=%s WHERE hotel_id=%s",
-                    (
-                        name_var.get().strip(),
-                        address_var.get().strip(),
-                        city_var.get().strip(),
-                        phone_var.get().strip(),
-                        int(hid),
-                    ),
-                )
-                cn.commit()
+            cn = get_connection()
+            cur = cn.cursor()
+            cur.execute(
+                "UPDATE hotel SET name=%s, address=%s, city=%s, phone=%s WHERE hotel_id=%s",
+                (
+                    name_var.get().strip(),
+                    address_var.get().strip(),
+                    city_var.get().strip(),
+                    phone_var.get().strip(),
+                    int(hid),
+                ),
+            )
+            cn.commit()
+            cn.close()
             messagebox.showinfo("Hotels", "Hotel updated.", parent=frame)
             refresh()
         except Exception as exc:
             show_db_error(frame, exc)
 
-    def delete_hotel() -> None:
+    def delete_hotel() :
         try:
             hid = hotel_id_var.get().strip()
             if not hid:
@@ -134,10 +136,11 @@ def build(parent: tk.Misc) -> TabBuild:
                 return
             if not messagebox.askyesno("Hotels", "Delete this hotel? (Blocked if rooms or employees exist.)", parent=frame):
                 return
-            with get_connection() as cn:
-                cur = cn.cursor()
-                cur.execute("DELETE FROM hotel WHERE hotel_id=%s", (int(hid),))
-                cn.commit()
+            cn = get_connection()
+            cur = cn.cursor()
+            cur.execute("DELETE FROM hotel WHERE hotel_id=%s", (int(hid),))
+            cn.commit()
+            cn.close()
             messagebox.showinfo("Hotels", "Hotel deleted.", parent=frame)
             refresh()
         except Exception as exc:
@@ -152,4 +155,6 @@ def build(parent: tk.Misc) -> TabBuild:
     ttk.Button(btns, text="Clear form", command=clear_form).pack(side="left", padx=6)
 
     refresh()
-    return frame, refresh
+    frame.bind('<Visibility>', lambda e: refresh())
+    refresh()
+    return frame
