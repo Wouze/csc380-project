@@ -1,220 +1,195 @@
-
-import datetime as dt
 import tkinter as tk
 from tkinter import messagebox, ttk
-
 from hotel_app.db import get_connection
-from hotel_app.tabs.common import clear_tree, parse_decimal, show_db_error
+from hotel_app.tabs.common import clear_tree, show_db_error
 
-
-def _parse_date(s, label) -> dt.date:
-    v = s.strip()
-    if not v:
-        raise ValueError(f"{label} is required (YYYY-MM-DD).")
-    return dt.datetime.strptime(v, "%Y-%m-%d").date()
-
-
-def build(parent) :
+def build(parent):
     frame = ttk.Frame(parent, padding=8)
     frame.columnconfigure(1, weight=1)
-    frame.rowconfigure(9, weight=1)  # tree row expands
+    frame.rowconfigure(10, weight=1)
 
-    ttk.Label(frame, text="Employees", font=("", 14, "bold")).grid(row=0, column=0, columnspan=3, sticky="w")
+    ttk.Label(frame, text="Employees", font=("", 14, "bold")).grid(row=0, column=0, columnspan=3, sticky="w", pady=(0,8))
 
-    emp_id_var = tk.StringVar()
-    ttk.Label(frame, text="Employee ID").grid(row=1, column=0, sticky="w", pady=2)
-    ttk.Entry(frame, textvariable=emp_id_var, width=12, state="readonly").grid(row=1, column=1, sticky="w")
+    id_var = tk.StringVar()
+    ttk.Label(frame, text="Employee ID").grid(row=1, column=0, sticky="w")
+    ttk.Entry(frame, textvariable=id_var, width=12).grid(row=1, column=1, sticky="w")
 
     fn_var = tk.StringVar()
-    ttk.Label(frame, text="First name *").grid(row=2, column=0, sticky="w", pady=2)
-    ttk.Entry(frame, textvariable=fn_var, width=28).grid(row=2, column=1, sticky="we")
+    ttk.Label(frame, text="First Name *").grid(row=2, column=0, sticky="w")
+    ttk.Entry(frame, textvariable=fn_var, width=28).grid(row=2, column=1, sticky="w")
 
     ln_var = tk.StringVar()
-    ttk.Label(frame, text="Last name *").grid(row=3, column=0, sticky="w", pady=2)
-    ttk.Entry(frame, textvariable=ln_var, width=28).grid(row=3, column=1, sticky="we")
+    ttk.Label(frame, text="Last Name *").grid(row=3, column=0, sticky="w")
+    ttk.Entry(frame, textvariable=ln_var, width=28).grid(row=3, column=1, sticky="w")
 
     role_var = tk.StringVar()
-    ttk.Label(frame, text="Role *").grid(row=4, column=0, sticky="w", pady=2)
-    ttk.Combobox(
-        frame,
-        textvariable=role_var,
-        values=("Receptionist", "Housekeeper", "Manager", "Chef", "Security", "Maintenance"),
-        width=25,
-        state="readonly",
-    ).grid(row=4, column=1, sticky="w")
+    ttk.Label(frame, text="Role *").grid(row=4, column=0, sticky="w")
+    role_combo = ttk.Combobox(frame, textvariable=role_var, values=("Receptionist", "Housekeeper", "Manager", "Chef", "Security", "Maintenance"), width=25, state="readonly")
+    role_combo.grid(row=4, column=1, sticky="w")
 
     sal_var = tk.StringVar()
-    ttk.Label(frame, text="Salary *").grid(row=5, column=0, sticky="w", pady=2)
+    ttk.Label(frame, text="Salary *").grid(row=5, column=0, sticky="w")
     ttk.Entry(frame, textvariable=sal_var, width=16).grid(row=5, column=1, sticky="w")
 
     hire_var = tk.StringVar()
-    ttk.Label(frame, text="Hire date *").grid(row=6, column=0, sticky="w", pady=2)
+    ttk.Label(frame, text="Hire Date (YYYY-MM-DD) *").grid(row=6, column=0, sticky="w")
     ttk.Entry(frame, textvariable=hire_var, width=16).grid(row=6, column=1, sticky="w")
-    ttk.Label(frame, text="YYYY-MM-DD", foreground="gray").grid(row=6, column=2, sticky="w", padx=6)
 
     hotel_var = tk.StringVar()
-    ttk.Label(frame, text="Hotel *").grid(row=7, column=0, sticky="w", pady=2)
+    ttk.Label(frame, text="Hotel *").grid(row=7, column=0, sticky="w")
     hotel_combo = ttk.Combobox(frame, textvariable=hotel_var, width=36, state="readonly")
-    hotel_combo.grid(row=7, column=1, sticky="we")
+    hotel_combo.grid(row=7, column=1, sticky="w")
+
+    search_var = tk.StringVar()
+    ttk.Label(frame, text="Search (Name/ID)").grid(row=8, column=0, sticky="w", pady=(8,2))
+    ttk.Entry(frame, textvariable=search_var, width=20).grid(row=8, column=1, sticky="w", pady=(8,2))
 
     cols = ("employee_id", "first_name", "last_name", "role", "salary", "hire_date", "hotel_id")
     tree = ttk.Treeview(frame, columns=cols, show="headings", height=12)
-    for c, w in zip(cols, (75, 100, 100, 110, 90, 100, 70)):
+    for c, w in zip(cols, (80, 100, 100, 100, 80, 100, 80)):
         tree.heading(c, text=c.replace("_", " ").title())
         tree.column(c, width=w, anchor="w")
-    tree.grid(row=9, column=0, columnspan=3, sticky="nsew", pady=8)
+    tree.grid(row=10, column=0, columnspan=3, sticky="nsew", pady=8)
 
     scroll = ttk.Scrollbar(frame, orient="vertical", command=tree.yview)
-    scroll.grid(row=9, column=4, sticky="ns", pady=8)
+    scroll.grid(row=10, column=3, sticky="ns", pady=8)
     tree.configure(yscrollcommand=scroll.set)
 
-    def parse_hotel_id() -> int:
-        txt = hotel_var.get().strip()
-        if not txt:
-            raise ValueError("Hotel is required.")
-        return int(txt.split("—", 1)[0].strip())
-
-    def load_hotels() :
+    def load_combos():
         try:
             cn = get_connection()
             cur = cn.cursor()
             cur.execute("SELECT hotel_id, name FROM hotel ORDER BY hotel_id")
             rows = cur.fetchall()
             cn.close()
-            hotel_combo["values"] = [f"{r[0]} — {r[1]}" for r in rows]
+            vals = [f"{r[0]} | {r[1]}" for r in rows]
+            hotel_combo["values"] = vals
         except Exception as exc:
-            show_db_error(frame, exc)
+            pass
 
-    def clear_form() :
-        emp_id_var.set("")
-        fn_var.set("")
-        ln_var.set("")
-        role_var.set("Receptionist")
-        sal_var.set("")
-        hire_var.set("")
-        hotel_var.set("")
+    def get_combo_id(var_str):
+        if not var_str.strip(): return None
+        return int(var_str.split("|")[0].strip())
 
-    def fill_row(_e=None) :
+    def load_row(_e=None):
         sel = tree.selection()
-        if not sel:
-            return
+        if not sel: return
         v = tree.item(sel[0], "values")
-        emp_id_var.set(str(v[0]))
+        id_var.set(str(v[0]))
         fn_var.set(v[1])
         ln_var.set(v[2])
         role_var.set(v[3])
         sal_var.set(str(v[4]))
         hire_var.set(str(v[5]))
         hid = str(v[6])
-        hotel_combo.set(next((x for x in hotel_combo["values"] if x.startswith(hid + " —")), ""))
+        for val in hotel_combo["values"]:
+            if val.startswith(hid + " |"):
+                hotel_combo.set(val)
+                break
 
-    tree.bind("<<TreeviewSelect>>", fill_row)
+    tree.bind("<<TreeviewSelect>>", load_row)
 
-    def refresh() :
-        load_hotels()
+    def clear():
+        id_var.set("")
+        fn_var.set("")
+        ln_var.set("")
+        role_var.set("")
+        sal_var.set("")
+        hire_var.set("")
+        hotel_var.set("")
+        search_var.set("")
+
+    def refresh(search=""):
+        load_combos()
         try:
             cn = get_connection()
             cur = cn.cursor()
-            cur.execute(
-                """
-                SELECT employee_id, first_name, last_name, role, salary, hire_date, hotel_id
-                FROM employee
-                ORDER BY employee_id
-                """
-            )
+            if search:
+                if search.isdigit():
+                    cur.execute("SELECT employee_id, first_name, last_name, role, salary, hire_date, hotel_id FROM employee WHERE employee_id = %s", (int(search),))
+                else:
+                    cur.execute("SELECT employee_id, first_name, last_name, role, salary, hire_date, hotel_id FROM employee WHERE first_name LIKE %s OR last_name LIKE %s", ('%'+search+'%', '%'+search+'%'))
+            else:
+                cur.execute("SELECT employee_id, first_name, last_name, role, salary, hire_date, hotel_id FROM employee ORDER BY employee_id")
             rows = cur.fetchall()
             cn.close()
             clear_tree(tree)
             for r in rows:
                 tree.insert("", tk.END, iid=str(r[0]), values=r)
-            clear_form()
         except Exception as exc:
             show_db_error(frame, exc)
 
-    def insert() :
+    def do_search():
+        refresh(search_var.get().strip())
+
+    def do_insert():
+        hid = get_combo_id(hotel_var.get())
+        if not id_var.get().strip() or not hid or not fn_var.get().strip() or not ln_var.get().strip() or not hire_var.get().strip() or not sal_var.get().strip() or not role_var.get().strip():
+            messagebox.showwarning("Employees", "All fields are required.", parent=frame)
+            return
         try:
-            sal = parse_decimal(sal_var.get(), "Salary")
-            hd = _parse_date(hire_var.get(), "Hire date")
-            hid = parse_hotel_id()
             cn = get_connection()
             cur = cn.cursor()
             cur.execute(
-                """
-                INSERT INTO employee (first_name, last_name, role, salary, hire_date, hotel_id)
-                VALUES (%s,%s,%s,%s,%s,%s)
-                """,
-                (fn_var.get().strip(), ln_var.get().strip(), role_var.get(), sal, hd, hid),
+                "INSERT INTO employee (employee_id, first_name, last_name, role, salary, hire_date, hotel_id) VALUES (%s,%s,%s,%s,%s,%s,%s)",
+                (int(id_var.get()), fn_var.get().strip(), ln_var.get().strip(), role_var.get(), float(sal_var.get()), hire_var.get(), hid)
             )
             cn.commit()
             cn.close()
-            messagebox.showinfo("Employees", "Employee inserted.", parent=frame)
+            messagebox.showinfo("Employees", "Inserted successfully.", parent=frame)
+            clear()
             refresh()
-        except ValueError as ve:
-            messagebox.showwarning("Employees", str(ve), parent=frame)
         except Exception as exc:
             show_db_error(frame, exc)
 
-    def update_row() :
-        iid = emp_id_var.get().strip()
-        if not iid:
-            messagebox.showwarning("Employees", "Select an employee to update.", parent=frame)
+    def do_update():
+        if not id_var.get():
+            messagebox.showwarning("Employees", "Select a record.", parent=frame)
+            return
+        hid = get_combo_id(hotel_var.get())
+        if not hid or not fn_var.get().strip() or not ln_var.get().strip() or not hire_var.get().strip() or not sal_var.get().strip() or not role_var.get().strip():
+            messagebox.showwarning("Employees", "All fields are required.", parent=frame)
             return
         try:
-            sal = parse_decimal(sal_var.get(), "Salary")
-            hd = _parse_date(hire_var.get(), "Hire date")
-            hid = parse_hotel_id()
             cn = get_connection()
             cur = cn.cursor()
             cur.execute(
-                """
-                UPDATE employee SET first_name=%s, last_name=%s, role=%s, salary=%s, hire_date=%s, hotel_id=%s
-                WHERE employee_id=%s
-                """,
-                (
-                    fn_var.get().strip(),
-                    ln_var.get().strip(),
-                    role_var.get(),
-                    sal,
-                    hd,
-                    hid,
-                    int(iid),
-                ),
+                "UPDATE employee SET first_name=%s, last_name=%s, role=%s, salary=%s, hire_date=%s, hotel_id=%s WHERE employee_id=%s",
+                (fn_var.get().strip(), ln_var.get().strip(), role_var.get(), float(sal_var.get()), hire_var.get(), hid, int(id_var.get()))
             )
             cn.commit()
             cn.close()
-            messagebox.showinfo("Employees", "Employee updated.", parent=frame)
+            messagebox.showinfo("Employees", "Updated successfully.", parent=frame)
             refresh()
-        except ValueError as ve:
-            messagebox.showwarning("Employees", str(ve), parent=frame)
         except Exception as exc:
             show_db_error(frame, exc)
 
-    def delete_row() :
-        iid = emp_id_var.get().strip()
-        if not iid:
-            messagebox.showwarning("Employees", "Select an employee to delete.", parent=frame)
+    def do_delete():
+        if not id_var.get():
+            messagebox.showwarning("Employees", "Select a record.", parent=frame)
             return
-        if not messagebox.askyesno("Employees", "Delete this employee?", parent=frame):
+        if not messagebox.askyesno("Employees", "Delete this record?", parent=frame):
             return
         try:
             cn = get_connection()
             cur = cn.cursor()
-            cur.execute("DELETE FROM employee WHERE employee_id=%s", (int(iid),))
+            cur.execute("DELETE FROM employee WHERE employee_id=%s", (int(id_var.get()),))
             cn.commit()
             cn.close()
-            messagebox.showinfo("Employees", "Employee deleted.", parent=frame)
+            messagebox.showinfo("Employees", "Deleted successfully.", parent=frame)
+            clear()
             refresh()
         except Exception as exc:
             show_db_error(frame, exc)
 
-    btns = ttk.Frame(frame)
-    btns.grid(row=10, column=0, columnspan=3, sticky="w")
-    ttk.Button(btns, text="Insert", command=insert).pack(side="left", padx=(0, 6))
-    ttk.Button(btns, text="Update", command=update_row).pack(side="left", padx=6)
-    ttk.Button(btns, text="Delete", command=delete_row).pack(side="left", padx=6)
-    ttk.Button(btns, text="Refresh", command=refresh).pack(side="left", padx=6)
+    btn_frame = ttk.Frame(frame)
+    btn_frame.grid(row=11, column=0, columnspan=3, sticky="w")
+    ttk.Button(btn_frame, text="Insert", command=do_insert).pack(side="left", padx=2)
+    ttk.Button(btn_frame, text="Update", command=do_update).pack(side="left", padx=2)
+    ttk.Button(btn_frame, text="Delete", command=do_delete).pack(side="left", padx=2)
+    ttk.Button(btn_frame, text="Search", command=do_search).pack(side="left", padx=2)
+    ttk.Button(btn_frame, text="Clear", command=lambda: [clear(), refresh()]).pack(side="left", padx=2)
 
     refresh()
     frame.bind('<Visibility>', lambda e: refresh())
-    refresh()
     return frame

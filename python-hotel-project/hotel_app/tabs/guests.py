@@ -1,208 +1,164 @@
-
 import tkinter as tk
 from tkinter import messagebox, ttk
-
 from hotel_app.db import get_connection
 from hotel_app.tabs.common import clear_tree, show_db_error
 
-
-def build(parent) :
+def build(parent):
     frame = ttk.Frame(parent, padding=8)
     frame.columnconfigure(1, weight=1)
-    frame.rowconfigure(8, weight=1)
+    frame.rowconfigure(9, weight=1)
 
-    ttk.Label(frame, text="Guests", font=("", 14, "bold")).grid(row=0, column=0, columnspan=3, sticky="w")
+    ttk.Label(frame, text="Guests", font=("", 14, "bold")).grid(row=0, column=0, columnspan=3, sticky="w", pady=(0,8))
 
-    gid_var = tk.StringVar()
-    ttk.Label(frame, text="Guest ID (auto)").grid(row=1, column=0, sticky="w", pady=2)
-    ttk.Entry(frame, textvariable=gid_var, width=12, state="readonly").grid(row=1, column=1, sticky="w")
+    id_var = tk.StringVar()
+    ttk.Label(frame, text="Guest ID").grid(row=1, column=0, sticky="w")
+    ttk.Entry(frame, textvariable=id_var, width=12).grid(row=1, column=1, sticky="w")
 
     fn_var = tk.StringVar()
-    ttk.Label(frame, text="First name *").grid(row=2, column=0, sticky="w", pady=2)
-    ttk.Entry(frame, textvariable=fn_var, width=32).grid(row=2, column=1, sticky="we")
+    ttk.Label(frame, text="First Name *").grid(row=2, column=0, sticky="w")
+    ttk.Entry(frame, textvariable=fn_var, width=32).grid(row=2, column=1, sticky="w")
 
     ln_var = tk.StringVar()
-    ttk.Label(frame, text="Last name *").grid(row=3, column=0, sticky="w", pady=2)
-    ttk.Entry(frame, textvariable=ln_var, width=32).grid(row=3, column=1, sticky="we")
+    ttk.Label(frame, text="Last Name *").grid(row=3, column=0, sticky="w")
+    ttk.Entry(frame, textvariable=ln_var, width=32).grid(row=3, column=1, sticky="w")
 
     email_var = tk.StringVar()
-    ttk.Label(frame, text="Email *").grid(row=4, column=0, sticky="w", pady=2)
-    ttk.Entry(frame, textvariable=email_var, width=32).grid(row=4, column=1, sticky="we")
+    ttk.Label(frame, text="Email *").grid(row=4, column=0, sticky="w")
+    ttk.Entry(frame, textvariable=email_var, width=32).grid(row=4, column=1, sticky="w")
 
     phone_var = tk.StringVar()
-    ttk.Label(frame, text="Phone *").grid(row=5, column=0, sticky="w", pady=2)
-    ttk.Entry(frame, textvariable=phone_var, width=32).grid(row=5, column=1, sticky="we")
+    ttk.Label(frame, text="Phone *").grid(row=5, column=0, sticky="w")
+    ttk.Entry(frame, textvariable=phone_var, width=32).grid(row=5, column=1, sticky="w")
 
-    nation_var = tk.StringVar()
-    ttk.Label(frame, text="Nationality *").grid(row=6, column=0, sticky="w", pady=2)
-    ttk.Entry(frame, textvariable=nation_var, width=32).grid(row=6, column=1, sticky="we")
+    nat_var = tk.StringVar()
+    ttk.Label(frame, text="Nationality *").grid(row=6, column=0, sticky="w")
+    ttk.Entry(frame, textvariable=nat_var, width=32).grid(row=6, column=1, sticky="w")
 
     search_var = tk.StringVar()
-    ttk.Label(frame, text="Search by guest ID").grid(row=7, column=0, sticky="w", pady=(8, 2))
-    ttk.Entry(frame, textvariable=search_var, width=14).grid(row=7, column=1, sticky="w")
+    ttk.Label(frame, text="Search (Name/ID)").grid(row=7, column=0, sticky="w", pady=(8,2))
+    ttk.Entry(frame, textvariable=search_var, width=20).grid(row=7, column=1, sticky="w", pady=(8,2))
 
     cols = ("guest_id", "first_name", "last_name", "email", "phone", "nationality")
-    tree = ttk.Treeview(frame, columns=cols, show="headings", height=14)
-    for c, w in zip(cols, (70, 100, 100, 200, 120, 100)):
+    tree = ttk.Treeview(frame, columns=cols, show="headings", height=12)
+    for c, w in zip(cols, (60, 100, 100, 150, 100, 100)):
         tree.heading(c, text=c.replace("_", " ").title())
-        tree.column(c, anchor="w", width=w)
-    tree.grid(row=8, column=0, columnspan=3, sticky="nsew", pady=8)
+        tree.column(c, width=w, anchor="w")
+    tree.grid(row=9, column=0, columnspan=3, sticky="nsew", pady=8)
 
     scroll = ttk.Scrollbar(frame, orient="vertical", command=tree.yview)
-    scroll.grid(row=8, column=3, sticky="ns", pady=8)
+    scroll.grid(row=9, column=3, sticky="ns", pady=8)
     tree.configure(yscrollcommand=scroll.set)
 
-    def load_row(_e=None) :
+    def load_row(_e=None):
         sel = tree.selection()
-        if not sel:
-            return
+        if not sel: return
         v = tree.item(sel[0], "values")
-        gid_var.set(str(v[0]))
+        id_var.set(str(v[0]))
         fn_var.set(v[1])
         ln_var.set(v[2])
         email_var.set(v[3])
         phone_var.set(v[4])
-        nation_var.set(v[5])
+        nat_var.set(v[5])
 
     tree.bind("<<TreeviewSelect>>", load_row)
 
-    def clear_form() :
-        gid_var.set("")
+    def clear():
+        id_var.set("")
         fn_var.set("")
         ln_var.set("")
         email_var.set("")
         phone_var.set("")
-        nation_var.set("")
+        nat_var.set("")
+        search_var.set("")
 
-    def refresh() :
+    def refresh(search=""):
         try:
             cn = get_connection()
             cur = cn.cursor()
-            cur.execute(
-                """
-                SELECT guest_id, first_name, last_name, email, phone, nationality
-                FROM guest
-                ORDER BY guest_id
-                """
-            )
-            rows = cur.fetchall()
-            cn.close()
-            clear_tree(tree)
-            for r in rows:
-                tree.insert("", tk.END, iid=str(r[0]), values=r)
-            clear_form()
-        except Exception as exc:
-            show_db_error(frame, exc)
-
-    def search_id() :
-        sid = search_var.get().strip()
-        if not sid:
-            refresh()
-            return
-        try:
-            cn = get_connection()
-            cur = cn.cursor()
-            cur.execute(
-                """
-                SELECT guest_id, first_name, last_name, email, phone, nationality
-                FROM guest WHERE guest_id=%s
-                """,
-                (int(sid),),
-            )
-            rows = cur.fetchall()
-            cn.close()
-            clear_tree(tree)
-            for r in rows:
-                tree.insert("", tk.END, iid=str(r[0]), values=r)
-            if rows:
-                tree.selection_set(str(rows[0][0]))
-                load_row()
+            if search:
+                if search.isdigit():
+                    cur.execute("SELECT guest_id, first_name, last_name, email, phone, nationality FROM guest WHERE guest_id = %s", (int(search),))
+                else:
+                    cur.execute("SELECT guest_id, first_name, last_name, email, phone, nationality FROM guest WHERE first_name LIKE %s OR last_name LIKE %s", ('%'+search+'%', '%'+search+'%'))
             else:
-                messagebox.showinfo("Guests", "No guest with that ID.", parent=frame)
-        except Exception as exc:
-            show_db_error(frame, exc)
-
-    def insert_guest() :
-        try:
-            if not email_var.get().strip() or not phone_var.get().strip():
-                messagebox.showwarning("Guests", "Email and phone are required.", parent=frame)
-                return
-            cn = get_connection()
-            cur = cn.cursor()
-            cur.execute(
-                """
-                INSERT INTO guest (first_name, last_name, email, phone, nationality)
-                VALUES (%s,%s,%s,%s,%s)
-                """,
-                (
-                    fn_var.get().strip(),
-                    ln_var.get().strip(),
-                    email_var.get().strip(),
-                    phone_var.get().strip(),
-                    nation_var.get().strip(),
-                ),
-            )
-            cn.commit()
+                cur.execute("SELECT guest_id, first_name, last_name, email, phone, nationality FROM guest ORDER BY guest_id")
+            rows = cur.fetchall()
             cn.close()
-            messagebox.showinfo("Guests", "Guest inserted.", parent=frame)
-            refresh()
+            clear_tree(tree)
+            for r in rows:
+                tree.insert("", tk.END, iid=str(r[0]), values=r)
         except Exception as exc:
             show_db_error(frame, exc)
 
-    def update_guest() :
-        try:
-            if not gid_var.get().strip():
-                messagebox.showwarning("Guests", "Select a guest to update.", parent=frame)
-                return
-            cn = get_connection()
-            cur = cn.cursor()
-            cur.execute(
-                """
-                UPDATE guest SET first_name=%s, last_name=%s, email=%s, phone=%s, nationality=%s
-                WHERE guest_id=%s
-                """,
-                (
-                    fn_var.get().strip(),
-                    ln_var.get().strip(),
-                    email_var.get().strip(),
-                    phone_var.get().strip(),
-                    nation_var.get().strip(),
-                    int(gid_var.get()),
-                ),
-            )
-            cn.commit()
-            cn.close()
-            messagebox.showinfo("Guests", "Guest updated.", parent=frame)
-            refresh()
-        except Exception as exc:
-            show_db_error(frame, exc)
+    def do_search():
+        refresh(search_var.get().strip())
 
-    def delete_guest() :
-        if not gid_var.get().strip():
-            messagebox.showwarning("Guests", "Select a guest to delete.", parent=frame)
-            return
-        if not messagebox.askyesno("Guests", "Delete this guest? (Fails if reservations exist.)", parent=frame):
+    def do_insert():
+        if not id_var.get().strip() or not fn_var.get().strip() or not ln_var.get().strip() or not email_var.get().strip() or not phone_var.get().strip() or not nat_var.get().strip():
+            messagebox.showwarning("Guests", "All * fields required.", parent=frame)
             return
         try:
             cn = get_connection()
             cur = cn.cursor()
-            cur.execute("DELETE FROM guest WHERE guest_id=%s", (int(gid_var.get()),))
+            cur.execute(
+                "INSERT INTO guest (guest_id, first_name, last_name, email, phone, nationality) VALUES (%s,%s,%s,%s,%s,%s)",
+                (int(id_var.get()), fn_var.get().strip(), ln_var.get().strip(), email_var.get().strip(), phone_var.get().strip(), nat_var.get().strip())
+            )
             cn.commit()
             cn.close()
-            messagebox.showinfo("Guests", "Guest deleted.", parent=frame)
+            messagebox.showinfo("Guests", "Inserted successfully.", parent=frame)
+            clear()
             refresh()
         except Exception as exc:
             show_db_error(frame, exc)
 
-    btns = ttk.Frame(frame)
-    btns.grid(row=9, column=0, columnspan=3, sticky="w")
-    ttk.Button(btns, text="Insert", command=insert_guest).pack(side="left", padx=(0, 6))
-    ttk.Button(btns, text="Update", command=update_guest).pack(side="left", padx=6)
-    ttk.Button(btns, text="Delete", command=delete_guest).pack(side="left", padx=6)
-    ttk.Button(btns, text="Refresh", command=refresh).pack(side="left", padx=6)
-    ttk.Button(btns, text="Search", command=search_id).pack(side="left", padx=12)
+    def do_update():
+        if not id_var.get():
+            messagebox.showwarning("Guests", "Select a record.", parent=frame)
+            return
+        if not fn_var.get().strip() or not ln_var.get().strip() or not email_var.get().strip() or not phone_var.get().strip() or not nat_var.get().strip():
+            messagebox.showwarning("Guests", "All * fields required.", parent=frame)
+            return
+        try:
+            cn = get_connection()
+            cur = cn.cursor()
+            cur.execute(
+                "UPDATE guest SET first_name=%s, last_name=%s, email=%s, phone=%s, nationality=%s WHERE guest_id=%s",
+                (fn_var.get().strip(), ln_var.get().strip(), email_var.get().strip(), phone_var.get().strip(), nat_var.get().strip(), int(id_var.get()))
+            )
+            cn.commit()
+            cn.close()
+            messagebox.showinfo("Guests", "Updated successfully.", parent=frame)
+            refresh()
+        except Exception as exc:
+            show_db_error(frame, exc)
+
+    def do_delete():
+        if not id_var.get():
+            messagebox.showwarning("Guests", "Select a record.", parent=frame)
+            return
+        if not messagebox.askyesno("Guests", "Delete this record?", parent=frame):
+            return
+        try:
+            cn = get_connection()
+            cur = cn.cursor()
+            cur.execute("DELETE FROM guest WHERE guest_id=%s", (int(id_var.get()),))
+            cn.commit()
+            cn.close()
+            messagebox.showinfo("Guests", "Deleted successfully.", parent=frame)
+            clear()
+            refresh()
+        except Exception as exc:
+            show_db_error(frame, exc)
+
+    btn_frame = ttk.Frame(frame)
+    btn_frame.grid(row=10, column=0, columnspan=3, sticky="w")
+    ttk.Button(btn_frame, text="Insert", command=do_insert).pack(side="left", padx=2)
+    ttk.Button(btn_frame, text="Update", command=do_update).pack(side="left", padx=2)
+    ttk.Button(btn_frame, text="Delete", command=do_delete).pack(side="left", padx=2)
+    ttk.Button(btn_frame, text="Search", command=do_search).pack(side="left", padx=2)
+    ttk.Button(btn_frame, text="Clear", command=lambda: [clear(), refresh()]).pack(side="left", padx=2)
 
     refresh()
     frame.bind('<Visibility>', lambda e: refresh())
-    refresh()
     return frame

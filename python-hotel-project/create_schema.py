@@ -10,7 +10,7 @@ def main():
     print("Creating schema...")
     conn = get_connection(with_db=False)
     cursor = conn.cursor()
-    cursor.execute("CREATE DATABASE IF NOT EXISTS hotel_management")
+    cursor.execute("CREATE DATABASE IF NOT EXISTS hotelmanagement")
     conn.commit()
     conn.close()
 

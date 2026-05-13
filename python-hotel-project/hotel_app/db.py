@@ -7,6 +7,6 @@ def get_connection(with_db=True):
         "password": ""
     }
     if with_db:
-        kwargs["database"] = "hotel_management"
+        kwargs["database"] = "hotelmanagement"
     return mysql.connector.connect(**kwargs)
 
