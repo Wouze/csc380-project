@@ -2,7 +2,7 @@ import tkinter as tk
 from tkinter import messagebox, ttk
 
 from car_rental_app.db import get_connection
-from car_rental_app.tabs.common import FIELD_PADY, SEARCH_PADY, bind_tree_autosize, fill_tree, show_db_error
+from car_rental_app.tabs.common import FIELD_PADY, SEARCH_PADY, create_tree_panel, fill_tree, show_db_error
 
 
 def build(parent):
@@ -38,16 +38,7 @@ def build(parent):
 
     cols = ("branch_id", "name", "address", "city", "phone")
     headings = ("Branch ID", "Branch Name", "Address", "City", "Phone")
-    tree = ttk.Treeview(frame, columns=cols, show="headings", height=12)
-    for c, h, w in zip(cols, headings, (80, 150, 200, 100, 100)):
-        tree.heading(c, text=h)
-        tree.column(c, width=w, anchor="w")
-    tree.grid(row=8, column=0, columnspan=3, sticky="nsew", pady=8)
-
-    scroll = ttk.Scrollbar(frame, orient="vertical", command=tree.yview)
-    scroll.grid(row=8, column=3, sticky="ns", pady=8)
-    tree.configure(yscrollcommand=scroll.set)
-    bind_tree_autosize(tree)
+    tree = create_tree_panel(frame, 8, cols, headings, (80, 150, 200, 100, 100))
 
     def load_row(_e=None):
         sel = tree.selection()

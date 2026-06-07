@@ -1,7 +1,7 @@
 import tkinter as tk
 from tkinter import messagebox, ttk
 from car_rental_app.db import get_connection
-from car_rental_app.tabs.common import FIELD_PADY, SEARCH_PADY, bind_tree_autosize, fill_tree, set_combo_by_label, show_db_error
+from car_rental_app.tabs.common import FIELD_PADY, SEARCH_PADY, create_tree_panel, fill_tree, set_combo_by_label, show_db_error
 
 def build(parent):
     frame = ttk.Frame(parent, padding=8)
@@ -49,16 +49,7 @@ def build(parent):
 
     cols = ("car_id", "branch_id", "license_plate", "model_year", "car_type", "daily_rate", "seats", "status")
     headings = ("Car ID", "Branch", "License Plate", "Model Year", "Car Type", "Daily Rate", "Seats", "Status")
-    tree = ttk.Treeview(frame, columns=cols, show="headings", height=12)
-    for c, h, w in zip(cols, headings, (60, 120, 100, 70, 80, 90, 50, 80)):
-        tree.heading(c, text=h)
-        tree.column(c, width=w, anchor="w")
-    tree.grid(row=11, column=0, columnspan=3, sticky="nsew", pady=8)
-
-    scroll = ttk.Scrollbar(frame, orient="vertical", command=tree.yview)
-    scroll.grid(row=11, column=3, sticky="ns", pady=8)
-    tree.configure(yscrollcommand=scroll.set)
-    bind_tree_autosize(tree)
+    tree = create_tree_panel(frame, 11, cols, headings, (60, 120, 100, 70, 80, 90, 50, 80))
 
     def load_combos():
         try:

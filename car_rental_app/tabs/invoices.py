@@ -1,7 +1,7 @@
 import tkinter as tk
 from tkinter import messagebox, ttk
 from car_rental_app.db import get_connection
-from car_rental_app.tabs.common import FIELD_PADY, SEARCH_PADY, bind_tree_autosize, fill_tree, show_db_error
+from car_rental_app.tabs.common import FIELD_PADY, SEARCH_PADY, create_tree_panel, fill_tree, show_db_error
 
 def build(parent):
     frame = ttk.Frame(parent, padding=8)
@@ -42,16 +42,7 @@ def build(parent):
 
     cols = ("payment_id", "rental_id", "total_amount", "payment_method", "payment_status", "issue_date")
     headings = ("Payment ID", "Rental ID", "Total Amount", "Payment Method", "Payment Status", "Issue Date")
-    tree = ttk.Treeview(frame, columns=cols, show="headings", height=12)
-    for c, h, w in zip(cols, headings, (80, 80, 100, 120, 120, 100)):
-        tree.heading(c, text=h)
-        tree.column(c, width=w, anchor="w")
-    tree.grid(row=9, column=0, columnspan=3, sticky="nsew", pady=8)
-
-    scroll = ttk.Scrollbar(frame, orient="vertical", command=tree.yview)
-    scroll.grid(row=9, column=3, sticky="ns", pady=8)
-    tree.configure(yscrollcommand=scroll.set)
-    bind_tree_autosize(tree)
+    tree = create_tree_panel(frame, 9, cols, headings, (80, 80, 100, 120, 120, 100))
 
     def load_combos():
         try:

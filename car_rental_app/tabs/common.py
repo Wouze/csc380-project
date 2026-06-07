@@ -5,23 +5,37 @@ from mysql.connector import Error as MySQLError
 
 FIELD_PADY = (0, 6)
 SEARCH_PADY = (18, 10)
-TREE_ROW_HEIGHT = 24
+TREE_ROW_HEIGHT = 34
+TREE_VISIBLE_ROWS = 12
 
 
 def setup_tree_style():
     style = ttk.Style()
+    try:
+        style.theme_use("clam")
+    except tk.TclError:
+        pass
     style.configure("Treeview", rowheight=TREE_ROW_HEIGHT)
+    style.configure("Treeview.Heading", font=("", 10, "bold"))
 
 
-def bind_tree_autosize(tree, min_rows=4):
-    def on_configure(event):
-        if event.widget is not tree:
-            return
-        rows = max(min_rows, (tree.winfo_height() - 2) // TREE_ROW_HEIGHT)
-        if rows != tree.cget("height"):
-            tree.configure(height=rows)
+def create_tree_panel(parent, row, cols, headings, widths, visible_rows=TREE_VISIBLE_ROWS):
+    """Table area grows with the window; rows keep a fixed pixel height."""
+    parent.rowconfigure(row, weight=1)
+    panel = ttk.Frame(parent)
+    panel.grid(row=row, column=0, columnspan=3, sticky="nsew", pady=8)
+    panel.columnconfigure(0, weight=1)
 
-    tree.bind("<Configure>", on_configure)
+    tree = ttk.Treeview(panel, columns=cols, show="headings", height=visible_rows, selectmode="browse")
+    for col, heading, width in zip(cols, headings, widths):
+        tree.heading(col, text=heading)
+        tree.column(col, width=width, minwidth=50, anchor="w", stretch=True)
+    tree.grid(row=0, column=0, sticky="ew")
+
+    scroll = ttk.Scrollbar(panel, orient="vertical", command=tree.yview)
+    scroll.grid(row=0, column=1, sticky="ns")
+    tree.configure(yscrollcommand=scroll.set)
+    return tree
 
 
 def format_cell(value):
@@ -57,8 +71,9 @@ def show_db_error(owner, exc, title="Database error"):
 
 
 def clear_tree(tree):
-    for iid in tree.get_children():
-        tree.delete(iid)
+    children = tree.get_children()
+    if children:
+        tree.delete(*children)
 
 
 def tree_fill(tree, rows):
