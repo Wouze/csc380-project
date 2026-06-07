@@ -1,7 +1,7 @@
 import tkinter as tk
 from tkinter import messagebox, ttk
 from car_rental_app.db import get_connection
-from car_rental_app.tabs.common import FIELD_PADY, SEARCH_PADY, clear_tree, show_db_error
+from car_rental_app.tabs.common import FIELD_PADY, SEARCH_PADY, bind_tree_autosize, fill_tree, show_db_error
 
 def build(parent):
     frame = ttk.Frame(parent, padding=8)
@@ -51,6 +51,7 @@ def build(parent):
     scroll = ttk.Scrollbar(frame, orient="vertical", command=tree.yview)
     scroll.grid(row=9, column=3, sticky="ns", pady=8)
     tree.configure(yscrollcommand=scroll.set)
+    bind_tree_autosize(tree)
 
     def load_combos():
         try:
@@ -104,9 +105,7 @@ def build(parent):
                 cur.execute("SELECT payment_id, rental_id, total_amount, payment_method, payment_status, issue_date FROM payment ORDER BY payment_id")
             rows = cur.fetchall()
             cn.close()
-            clear_tree(tree)
-            for r in rows:
-                tree.insert("", tk.END, iid=str(r[0]), values=r)
+            fill_tree(tree, rows)
         except Exception as exc:
             show_db_error(frame, exc)
 

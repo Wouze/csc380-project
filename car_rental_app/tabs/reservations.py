@@ -1,7 +1,7 @@
 import tkinter as tk
 from tkinter import messagebox, ttk
 from car_rental_app.db import get_connection
-from car_rental_app.tabs.common import FIELD_PADY, SEARCH_PADY, clear_tree, show_db_error
+from car_rental_app.tabs.common import FIELD_PADY, SEARCH_PADY, bind_tree_autosize, fill_tree, set_combo_by_label, show_db_error
 
 def build(parent):
     frame = ttk.Frame(parent, padding=8)
@@ -41,9 +41,9 @@ def build(parent):
     ttk.Entry(frame, textvariable=search_var, width=20).grid(row=7, column=1, sticky="w", pady=SEARCH_PADY)
 
     cols = ("rental_id", "customer_id", "booking_date", "pick_up_date", "return_date", "status")
-    headings = ("Rental ID", "Customer ID", "Booking Date", "Pick-up", "Return", "Status")
+    headings = ("Rental ID", "Customer", "Booking Date", "Pick-up", "Return", "Status")
     tree = ttk.Treeview(frame, columns=cols, show="headings", height=12)
-    for c, h, w in zip(cols, headings, (80, 80, 100, 100, 100, 100)):
+    for c, h, w in zip(cols, headings, (80, 140, 100, 100, 100, 100)):
         tree.heading(c, text=h)
         tree.column(c, width=w, anchor="w")
     tree.grid(row=9, column=0, columnspan=3, sticky="nsew", pady=8)
@@ -51,6 +51,7 @@ def build(parent):
     scroll = ttk.Scrollbar(frame, orient="vertical", command=tree.yview)
     scroll.grid(row=9, column=3, sticky="ns", pady=8)
     tree.configure(yscrollcommand=scroll.set)
+    bind_tree_autosize(tree)
 
     def load_combos():
         try:
@@ -72,11 +73,7 @@ def build(parent):
         if not sel: return
         v = tree.item(sel[0], "values")
         id_var.set(str(v[0]))
-        gid = str(v[1])
-        for val in guest_combo["values"]:
-            if val.startswith(gid + " |"):
-                guest_combo.set(val)
-                break
+        set_combo_by_label(guest_combo, v[1])
         booking_var.set(v[2])
         in_var.set(v[3])
         out_var.set(v[4])
@@ -100,16 +97,25 @@ def build(parent):
             cur = cn.cursor()
             if search:
                 if search.isdigit():
-                    cur.execute("SELECT rental_id, customer_id, booking_date, pick_up_date, return_date, status FROM rental WHERE rental_id = %s", (int(search),))
+                    cur.execute(
+                        "SELECT r.rental_id, CONCAT(c.first_name, ' ', c.last_name), r.booking_date, r.pick_up_date, r.return_date, r.status "
+                        "FROM rental r LEFT JOIN customer c ON r.customer_id = c.customer_id WHERE r.rental_id = %s",
+                        (int(search),),
+                    )
                 else:
-                    cur.execute("SELECT rental_id, customer_id, booking_date, pick_up_date, return_date, status FROM rental WHERE status LIKE %s", ("%" + search + "%",))
+                    cur.execute(
+                        "SELECT r.rental_id, CONCAT(c.first_name, ' ', c.last_name), r.booking_date, r.pick_up_date, r.return_date, r.status "
+                        "FROM rental r LEFT JOIN customer c ON r.customer_id = c.customer_id WHERE r.status LIKE %s",
+                        ("%" + search + "%",),
+                    )
             else:
-                cur.execute("SELECT rental_id, customer_id, booking_date, pick_up_date, return_date, status FROM rental ORDER BY rental_id")
+                cur.execute(
+                    "SELECT r.rental_id, CONCAT(c.first_name, ' ', c.last_name), r.booking_date, r.pick_up_date, r.return_date, r.status "
+                    "FROM rental r LEFT JOIN customer c ON r.customer_id = c.customer_id ORDER BY r.rental_id"
+                )
             rows = cur.fetchall()
             cn.close()
-            clear_tree(tree)
-            for r in rows:
-                tree.insert("", tk.END, iid=str(r[0]), values=r)
+            fill_tree(tree, rows)
         except Exception as exc:
             show_db_error(frame, exc)
 

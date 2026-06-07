@@ -1,7 +1,7 @@
 import tkinter as tk
 from tkinter import messagebox, ttk
 from car_rental_app.db import get_connection
-from car_rental_app.tabs.common import FIELD_PADY, SEARCH_PADY, clear_tree, show_db_error
+from car_rental_app.tabs.common import FIELD_PADY, SEARCH_PADY, bind_tree_autosize, fill_tree, set_combo_by_label, show_db_error
 
 def build(parent):
     frame = ttk.Frame(parent, padding=8)
@@ -48,9 +48,9 @@ def build(parent):
     ttk.Entry(frame, textvariable=search_var, width=20).grid(row=9, column=1, sticky="w", pady=SEARCH_PADY)
 
     cols = ("car_id", "branch_id", "license_plate", "model_year", "car_type", "daily_rate", "seats", "status")
-    headings = ("Car ID", "Branch ID", "License Plate", "Model Year", "Car Type", "Daily Rate", "Seats", "Status")
+    headings = ("Car ID", "Branch", "License Plate", "Model Year", "Car Type", "Daily Rate", "Seats", "Status")
     tree = ttk.Treeview(frame, columns=cols, show="headings", height=12)
-    for c, h, w in zip(cols, headings, (60, 60, 90, 70, 80, 90, 50, 80)):
+    for c, h, w in zip(cols, headings, (60, 120, 100, 70, 80, 90, 50, 80)):
         tree.heading(c, text=h)
         tree.column(c, width=w, anchor="w")
     tree.grid(row=11, column=0, columnspan=3, sticky="nsew", pady=8)
@@ -58,6 +58,7 @@ def build(parent):
     scroll = ttk.Scrollbar(frame, orient="vertical", command=tree.yview)
     scroll.grid(row=11, column=3, sticky="ns", pady=8)
     tree.configure(yscrollcommand=scroll.set)
+    bind_tree_autosize(tree)
 
     def load_combos():
         try:
@@ -79,11 +80,7 @@ def build(parent):
         if not sel: return
         v = tree.item(sel[0], "values")
         id_var.set(str(v[0]))
-        hid = str(v[1])
-        for val in hotel_combo["values"]:
-            if val.startswith(hid + " |"):
-                hotel_combo.set(val)
-                break
+        set_combo_by_label(hotel_combo, v[1])
         room_num_var.set(v[2])
         floor_var.set(str(v[3]))
         type_var.set(v[4])
@@ -111,16 +108,25 @@ def build(parent):
             cur = cn.cursor()
             if search:
                 if search.isdigit():
-                    cur.execute("SELECT car_id, branch_id, license_plate, model_year, car_type, daily_rate, seats, status FROM car WHERE car_id = %s", (int(search),))
+                    cur.execute(
+                        "SELECT c.car_id, b.name, c.license_plate, c.model_year, c.car_type, c.daily_rate, c.seats, c.status "
+                        "FROM car c LEFT JOIN branch b ON c.branch_id = b.branch_id WHERE c.car_id = %s",
+                        (int(search),),
+                    )
                 else:
-                    cur.execute("SELECT car_id, branch_id, license_plate, model_year, car_type, daily_rate, seats, status FROM car WHERE license_plate LIKE %s", ("%" + search + "%",))
+                    cur.execute(
+                        "SELECT c.car_id, b.name, c.license_plate, c.model_year, c.car_type, c.daily_rate, c.seats, c.status "
+                        "FROM car c LEFT JOIN branch b ON c.branch_id = b.branch_id WHERE c.license_plate LIKE %s",
+                        ("%" + search + "%",),
+                    )
             else:
-                cur.execute("SELECT car_id, branch_id, license_plate, model_year, car_type, daily_rate, seats, status FROM car ORDER BY car_id")
+                cur.execute(
+                    "SELECT c.car_id, b.name, c.license_plate, c.model_year, c.car_type, c.daily_rate, c.seats, c.status "
+                    "FROM car c LEFT JOIN branch b ON c.branch_id = b.branch_id ORDER BY c.car_id"
+                )
             rows = cur.fetchall()
             cn.close()
-            clear_tree(tree)
-            for r in rows:
-                tree.insert("", tk.END, iid=str(r[0]), values=r)
+            fill_tree(tree, rows)
         except Exception as exc:
             show_db_error(frame, exc)
 

@@ -1,7 +1,7 @@
 import tkinter as tk
 from tkinter import messagebox, ttk
 from car_rental_app.db import get_connection
-from car_rental_app.tabs.common import FIELD_PADY, SEARCH_PADY, clear_tree, show_db_error
+from car_rental_app.tabs.common import FIELD_PADY, SEARCH_PADY, bind_tree_autosize, fill_tree, set_combo_by_label, show_db_error
 
 def build(parent):
     frame = ttk.Frame(parent, padding=8)
@@ -45,9 +45,9 @@ def build(parent):
     ttk.Entry(frame, textvariable=search_var, width=20).grid(row=8, column=1, sticky="w", pady=SEARCH_PADY)
 
     cols = ("employee_id", "first_name", "last_name", "role", "salary", "hire_date", "branch_id")
-    headings = ("Employee ID", "First Name", "Last Name", "Role", "Salary", "Hire Date", "Branch ID")
+    headings = ("Employee ID", "First Name", "Last Name", "Role", "Salary", "Hire Date", "Branch")
     tree = ttk.Treeview(frame, columns=cols, show="headings", height=12)
-    for c, h, w in zip(cols, headings, (80, 100, 100, 100, 80, 100, 80)):
+    for c, h, w in zip(cols, headings, (80, 100, 100, 100, 80, 100, 120)):
         tree.heading(c, text=h)
         tree.column(c, width=w, anchor="w")
     tree.grid(row=10, column=0, columnspan=3, sticky="nsew", pady=8)
@@ -55,6 +55,7 @@ def build(parent):
     scroll = ttk.Scrollbar(frame, orient="vertical", command=tree.yview)
     scroll.grid(row=10, column=3, sticky="ns", pady=8)
     tree.configure(yscrollcommand=scroll.set)
+    bind_tree_autosize(tree)
 
     def load_combos():
         try:
@@ -82,11 +83,7 @@ def build(parent):
         role_var.set(v[3])
         sal_var.set(str(v[4]))
         hire_var.set(str(v[5]))
-        hid = str(v[6])
-        for val in hotel_combo["values"]:
-            if val.startswith(hid + " |"):
-                hotel_combo.set(val)
-                break
+        set_combo_by_label(hotel_combo, v[6])
 
     tree.bind("<<TreeviewSelect>>", load_row)
 
@@ -107,16 +104,26 @@ def build(parent):
             cur = cn.cursor()
             if search:
                 if search.isdigit():
-                    cur.execute("SELECT employee_id, first_name, last_name, role, salary, hire_date, branch_id FROM employee WHERE employee_id = %s", (int(search),))
+                    cur.execute(
+                        "SELECT e.employee_id, e.first_name, e.last_name, e.role, e.salary, e.hire_date, b.name "
+                        "FROM employee e LEFT JOIN branch b ON e.branch_id = b.branch_id WHERE e.employee_id = %s",
+                        (int(search),),
+                    )
                 else:
-                    cur.execute("SELECT employee_id, first_name, last_name, role, salary, hire_date, branch_id FROM employee WHERE first_name LIKE %s OR last_name LIKE %s", ('%'+search+'%', '%'+search+'%'))
+                    cur.execute(
+                        "SELECT e.employee_id, e.first_name, e.last_name, e.role, e.salary, e.hire_date, b.name "
+                        "FROM employee e LEFT JOIN branch b ON e.branch_id = b.branch_id "
+                        "WHERE e.first_name LIKE %s OR e.last_name LIKE %s",
+                        ('%'+search+'%', '%'+search+'%'),
+                    )
             else:
-                cur.execute("SELECT employee_id, first_name, last_name, role, salary, hire_date, branch_id FROM employee ORDER BY employee_id")
+                cur.execute(
+                    "SELECT e.employee_id, e.first_name, e.last_name, e.role, e.salary, e.hire_date, b.name "
+                    "FROM employee e LEFT JOIN branch b ON e.branch_id = b.branch_id ORDER BY e.employee_id"
+                )
             rows = cur.fetchall()
             cn.close()
-            clear_tree(tree)
-            for r in rows:
-                tree.insert("", tk.END, iid=str(r[0]), values=r)
+            fill_tree(tree, rows)
         except Exception as exc:
             show_db_error(frame, exc)
 

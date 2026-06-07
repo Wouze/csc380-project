@@ -2,10 +2,12 @@ import tkinter as tk
 from tkinter import messagebox, ttk
 
 from car_rental_app.tabs import employees, guests, hotels, invoices, reservations, rooms
+from car_rental_app.tabs.common import setup_tree_style
 
 
 def main():
     root = tk.Tk()
+    setup_tree_style()
     root.title("Car Rental System")
     root.geometry("1100x720")
     root.minsize(900, 560)
