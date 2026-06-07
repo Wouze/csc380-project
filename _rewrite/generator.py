@@ -1,13 +1,13 @@
 import os
 
-tabs_dir = '../hotel_app/tabs'
+tabs_dir = '../car_rental_app/tabs'
 
 # 1. hotels.py
 with open(f'{tabs_dir}/hotels.py', 'w') as f:
     f.write('''import tkinter as tk
 from tkinter import messagebox, ttk
-from hotel_app.db import get_connection
-from hotel_app.tabs.common import clear_tree, show_db_error
+from car_rental_app.db import get_connection
+from car_rental_app.tabs.common import clear_tree, show_db_error
 
 def build(parent):
     frame = ttk.Frame(parent, padding=8)
@@ -168,8 +168,8 @@ def build(parent):
 with open(f'{tabs_dir}/guests.py', 'w') as f:
     f.write('''import tkinter as tk
 from tkinter import messagebox, ttk
-from hotel_app.db import get_connection
-from hotel_app.tabs.common import clear_tree, show_db_error
+from car_rental_app.db import get_connection
+from car_rental_app.tabs.common import clear_tree, show_db_error
 
 def build(parent):
     frame = ttk.Frame(parent, padding=8)
@@ -336,8 +336,8 @@ def build(parent):
 with open(f'{tabs_dir}/employees.py', 'w') as f:
     f.write('''import tkinter as tk
 from tkinter import messagebox, ttk
-from hotel_app.db import get_connection
-from hotel_app.tabs.common import clear_tree, show_db_error
+from car_rental_app.db import get_connection
+from car_rental_app.tabs.common import clear_tree, show_db_error
 
 def build(parent):
     frame = ttk.Frame(parent, padding=8)
@@ -535,8 +535,8 @@ def build(parent):
 with open(f'{tabs_dir}/rooms.py', 'w') as f:
     f.write('''import tkinter as tk
 from tkinter import messagebox, ttk
-from hotel_app.db import get_connection
-from hotel_app.tabs.common import clear_tree, show_db_error
+from car_rental_app.db import get_connection
+from car_rental_app.tabs.common import clear_tree, show_db_error
 
 def build(parent):
     frame = ttk.Frame(parent, padding=8)
@@ -735,8 +735,8 @@ def build(parent):
 with open(f'{tabs_dir}/reservations.py', 'w') as f:
     f.write('''import tkinter as tk
 from tkinter import messagebox, ttk
-from hotel_app.db import get_connection
-from hotel_app.tabs.common import clear_tree, show_db_error
+from car_rental_app.db import get_connection
+from car_rental_app.tabs.common import clear_tree, show_db_error
 
 def build(parent):
     frame = ttk.Frame(parent, padding=8)
@@ -924,8 +924,8 @@ def build(parent):
 with open(f'{tabs_dir}/invoices.py', 'w') as f:
     f.write('''import tkinter as tk
 from tkinter import messagebox, ttk
-from hotel_app.db import get_connection
-from hotel_app.tabs.common import clear_tree, show_db_error
+from car_rental_app.db import get_connection
+from car_rental_app.tabs.common import clear_tree, show_db_error
 
 def build(parent):
     frame = ttk.Frame(parent, padding=8)

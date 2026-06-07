@@ -1,7 +1,7 @@
 import tkinter as tk
 from tkinter import messagebox, ttk
-from hotel_app.db import get_connection
-from hotel_app.tabs.common import clear_tree, show_db_error
+from car_rental_app.db import get_connection
+from car_rental_app.tabs.common import FIELD_PADY, SEARCH_PADY, clear_tree, show_db_error
 
 def build(parent):
     frame = ttk.Frame(parent, padding=8)
@@ -11,43 +11,44 @@ def build(parent):
     ttk.Label(frame, text="Employees", font=("", 14, "bold")).grid(row=0, column=0, columnspan=3, sticky="w", pady=(0,8))
 
     id_var = tk.StringVar()
-    ttk.Label(frame, text="Employee ID").grid(row=1, column=0, sticky="w")
-    ttk.Entry(frame, textvariable=id_var, width=12).grid(row=1, column=1, sticky="w")
+    ttk.Label(frame, text="Employee ID").grid(row=1, column=0, sticky="w", pady=FIELD_PADY)
+    ttk.Entry(frame, textvariable=id_var, width=12).grid(row=1, column=1, sticky="w", pady=FIELD_PADY)
 
     fn_var = tk.StringVar()
-    ttk.Label(frame, text="First Name *").grid(row=2, column=0, sticky="w")
-    ttk.Entry(frame, textvariable=fn_var, width=28).grid(row=2, column=1, sticky="w")
+    ttk.Label(frame, text="First Name *").grid(row=2, column=0, sticky="w", pady=FIELD_PADY)
+    ttk.Entry(frame, textvariable=fn_var, width=28).grid(row=2, column=1, sticky="w", pady=FIELD_PADY)
 
     ln_var = tk.StringVar()
-    ttk.Label(frame, text="Last Name *").grid(row=3, column=0, sticky="w")
-    ttk.Entry(frame, textvariable=ln_var, width=28).grid(row=3, column=1, sticky="w")
+    ttk.Label(frame, text="Last Name *").grid(row=3, column=0, sticky="w", pady=FIELD_PADY)
+    ttk.Entry(frame, textvariable=ln_var, width=28).grid(row=3, column=1, sticky="w", pady=FIELD_PADY)
 
     role_var = tk.StringVar()
-    ttk.Label(frame, text="Role *").grid(row=4, column=0, sticky="w")
-    role_combo = ttk.Combobox(frame, textvariable=role_var, values=("Receptionist", "Housekeeper", "Manager", "Chef", "Security", "Maintenance"), width=25, state="readonly")
-    role_combo.grid(row=4, column=1, sticky="w")
+    ttk.Label(frame, text="Role *").grid(row=4, column=0, sticky="w", pady=FIELD_PADY)
+    role_combo = ttk.Combobox(frame, textvariable=role_var, values=("Agent", "Mechanic", "Manager", "Sales", "Security", "Maintenance"), width=25, state="readonly")
+    role_combo.grid(row=4, column=1, sticky="w", pady=FIELD_PADY)
 
     sal_var = tk.StringVar()
-    ttk.Label(frame, text="Salary *").grid(row=5, column=0, sticky="w")
-    ttk.Entry(frame, textvariable=sal_var, width=16).grid(row=5, column=1, sticky="w")
+    ttk.Label(frame, text="Salary *").grid(row=5, column=0, sticky="w", pady=FIELD_PADY)
+    ttk.Entry(frame, textvariable=sal_var, width=16).grid(row=5, column=1, sticky="w", pady=FIELD_PADY)
 
     hire_var = tk.StringVar()
-    ttk.Label(frame, text="Hire Date (YYYY-MM-DD) *").grid(row=6, column=0, sticky="w")
-    ttk.Entry(frame, textvariable=hire_var, width=16).grid(row=6, column=1, sticky="w")
+    ttk.Label(frame, text="Hire Date (YYYY-MM-DD) *").grid(row=6, column=0, sticky="w", pady=FIELD_PADY)
+    ttk.Entry(frame, textvariable=hire_var, width=16).grid(row=6, column=1, sticky="w", pady=FIELD_PADY)
 
     hotel_var = tk.StringVar()
-    ttk.Label(frame, text="Hotel *").grid(row=7, column=0, sticky="w")
+    ttk.Label(frame, text="Branch *").grid(row=7, column=0, sticky="w", pady=FIELD_PADY)
     hotel_combo = ttk.Combobox(frame, textvariable=hotel_var, width=36, state="readonly")
-    hotel_combo.grid(row=7, column=1, sticky="w")
+    hotel_combo.grid(row=7, column=1, sticky="w", pady=FIELD_PADY)
 
     search_var = tk.StringVar()
-    ttk.Label(frame, text="Search (Name/ID)").grid(row=8, column=0, sticky="w", pady=(8,2))
-    ttk.Entry(frame, textvariable=search_var, width=20).grid(row=8, column=1, sticky="w", pady=(8,2))
+    ttk.Label(frame, text="Search (Name/ID)").grid(row=8, column=0, sticky="w", pady=SEARCH_PADY)
+    ttk.Entry(frame, textvariable=search_var, width=20).grid(row=8, column=1, sticky="w", pady=SEARCH_PADY)
 
-    cols = ("employee_id", "first_name", "last_name", "role", "salary", "hire_date", "hotel_id")
+    cols = ("employee_id", "first_name", "last_name", "role", "salary", "hire_date", "branch_id")
+    headings = ("Employee ID", "First Name", "Last Name", "Role", "Salary", "Hire Date", "Branch ID")
     tree = ttk.Treeview(frame, columns=cols, show="headings", height=12)
-    for c, w in zip(cols, (80, 100, 100, 100, 80, 100, 80)):
-        tree.heading(c, text=c.replace("_", " ").title())
+    for c, h, w in zip(cols, headings, (80, 100, 100, 100, 80, 100, 80)):
+        tree.heading(c, text=h)
         tree.column(c, width=w, anchor="w")
     tree.grid(row=10, column=0, columnspan=3, sticky="nsew", pady=8)
 
@@ -59,7 +60,7 @@ def build(parent):
         try:
             cn = get_connection()
             cur = cn.cursor()
-            cur.execute("SELECT hotel_id, name FROM hotel ORDER BY hotel_id")
+            cur.execute("SELECT branch_id, name FROM branch ORDER BY branch_id")
             rows = cur.fetchall()
             cn.close()
             vals = [f"{r[0]} | {r[1]}" for r in rows]
@@ -106,11 +107,11 @@ def build(parent):
             cur = cn.cursor()
             if search:
                 if search.isdigit():
-                    cur.execute("SELECT employee_id, first_name, last_name, role, salary, hire_date, hotel_id FROM employee WHERE employee_id = %s", (int(search),))
+                    cur.execute("SELECT employee_id, first_name, last_name, role, salary, hire_date, branch_id FROM employee WHERE employee_id = %s", (int(search),))
                 else:
-                    cur.execute("SELECT employee_id, first_name, last_name, role, salary, hire_date, hotel_id FROM employee WHERE first_name LIKE %s OR last_name LIKE %s", ('%'+search+'%', '%'+search+'%'))
+                    cur.execute("SELECT employee_id, first_name, last_name, role, salary, hire_date, branch_id FROM employee WHERE first_name LIKE %s OR last_name LIKE %s", ('%'+search+'%', '%'+search+'%'))
             else:
-                cur.execute("SELECT employee_id, first_name, last_name, role, salary, hire_date, hotel_id FROM employee ORDER BY employee_id")
+                cur.execute("SELECT employee_id, first_name, last_name, role, salary, hire_date, branch_id FROM employee ORDER BY employee_id")
             rows = cur.fetchall()
             cn.close()
             clear_tree(tree)
@@ -131,7 +132,7 @@ def build(parent):
             cn = get_connection()
             cur = cn.cursor()
             cur.execute(
-                "INSERT INTO employee (employee_id, first_name, last_name, role, salary, hire_date, hotel_id) VALUES (%s,%s,%s,%s,%s,%s,%s)",
+                "INSERT INTO employee (employee_id, first_name, last_name, role, salary, hire_date, branch_id) VALUES (%s,%s,%s,%s,%s,%s,%s)",
                 (int(id_var.get()), fn_var.get().strip(), ln_var.get().strip(), role_var.get(), float(sal_var.get()), hire_var.get(), hid)
             )
             cn.commit()
@@ -154,7 +155,7 @@ def build(parent):
             cn = get_connection()
             cur = cn.cursor()
             cur.execute(
-                "UPDATE employee SET first_name=%s, last_name=%s, role=%s, salary=%s, hire_date=%s, hotel_id=%s WHERE employee_id=%s",
+                "UPDATE employee SET first_name=%s, last_name=%s, role=%s, salary=%s, hire_date=%s, branch_id=%s WHERE employee_id=%s",
                 (fn_var.get().strip(), ln_var.get().strip(), role_var.get(), float(sal_var.get()), hire_var.get(), hid, int(id_var.get()))
             )
             cn.commit()

@@ -17,7 +17,7 @@ Use `python -m pip` so it matches the same `python` you run below.
 ## 3. Run the app
 
 ```bash
-python -m hotel_app.main
+python -m car_rental_app.main
 ```
 
 First time: it creates the database `hotel_management` and tables if they are missing (XAMPP defaults: `127.0.0.1`, port `3306`, user `root`, empty password).

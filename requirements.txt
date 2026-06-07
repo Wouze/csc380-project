@@ -1,3 +1,3 @@
 # Use: python -m pip install -r requirements.txt
-# (so pip targets the same Python as `python -m hotel_app.main`)
+# (so pip targets the same Python as `python -m car_rental_app.main`)
 mysql-connector-python>=9.0.0

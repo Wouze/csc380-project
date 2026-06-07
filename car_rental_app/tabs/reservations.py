@@ -1,49 +1,50 @@
 import tkinter as tk
 from tkinter import messagebox, ttk
-from hotel_app.db import get_connection
-from hotel_app.tabs.common import clear_tree, show_db_error
+from car_rental_app.db import get_connection
+from car_rental_app.tabs.common import FIELD_PADY, SEARCH_PADY, clear_tree, show_db_error
 
 def build(parent):
     frame = ttk.Frame(parent, padding=8)
     frame.columnconfigure(1, weight=1)
     frame.rowconfigure(9, weight=1)
 
-    ttk.Label(frame, text="Reservations", font=("", 14, "bold")).grid(row=0, column=0, columnspan=3, sticky="w", pady=(0,8))
+    ttk.Label(frame, text="Rentals", font=("", 14, "bold")).grid(row=0, column=0, columnspan=3, sticky="w", pady=(0,8))
 
     id_var = tk.StringVar()
-    ttk.Label(frame, text="Reservation ID").grid(row=1, column=0, sticky="w")
-    ttk.Entry(frame, textvariable=id_var, width=12).grid(row=1, column=1, sticky="w")
+    ttk.Label(frame, text="Rental ID").grid(row=1, column=0, sticky="w", pady=FIELD_PADY)
+    ttk.Entry(frame, textvariable=id_var, width=12).grid(row=1, column=1, sticky="w", pady=FIELD_PADY)
 
     guest_var = tk.StringVar()
-    ttk.Label(frame, text="Guest *").grid(row=2, column=0, sticky="w")
+    ttk.Label(frame, text="Customer *").grid(row=2, column=0, sticky="w", pady=FIELD_PADY)
     guest_combo = ttk.Combobox(frame, textvariable=guest_var, width=36, state="readonly")
-    guest_combo.grid(row=2, column=1, sticky="w")
+    guest_combo.grid(row=2, column=1, sticky="w", pady=FIELD_PADY)
 
     booking_var = tk.StringVar()
-    ttk.Label(frame, text="Booking Date *").grid(row=3, column=0, sticky="w")
-    ttk.Entry(frame, textvariable=booking_var, width=16).grid(row=3, column=1, sticky="w")
-    ttk.Label(frame, text="(YYYY-MM-DD)", foreground="gray").grid(row=3, column=2, sticky="w")
+    ttk.Label(frame, text="Booking Date *").grid(row=3, column=0, sticky="w", pady=FIELD_PADY)
+    ttk.Entry(frame, textvariable=booking_var, width=16).grid(row=3, column=1, sticky="w", pady=FIELD_PADY)
+    ttk.Label(frame, text="(YYYY-MM-DD)", foreground="gray").grid(row=3, column=2, sticky="w", pady=FIELD_PADY)
 
     in_var = tk.StringVar()
-    ttk.Label(frame, text="Check-in *").grid(row=4, column=0, sticky="w")
-    ttk.Entry(frame, textvariable=in_var, width=16).grid(row=4, column=1, sticky="w")
+    ttk.Label(frame, text="Pick-up *").grid(row=4, column=0, sticky="w", pady=FIELD_PADY)
+    ttk.Entry(frame, textvariable=in_var, width=16).grid(row=4, column=1, sticky="w", pady=FIELD_PADY)
 
     out_var = tk.StringVar()
-    ttk.Label(frame, text="Check-out *").grid(row=5, column=0, sticky="w")
-    ttk.Entry(frame, textvariable=out_var, width=16).grid(row=5, column=1, sticky="w")
+    ttk.Label(frame, text="Return *").grid(row=5, column=0, sticky="w", pady=FIELD_PADY)
+    ttk.Entry(frame, textvariable=out_var, width=16).grid(row=5, column=1, sticky="w", pady=FIELD_PADY)
 
     status_var = tk.StringVar()
-    ttk.Label(frame, text="Status *").grid(row=6, column=0, sticky="w")
-    ttk.Combobox(frame, textvariable=status_var, values=("confirmed", "checked-in", "checked-out", "cancelled"), width=16, state="readonly").grid(row=6, column=1, sticky="w")
+    ttk.Label(frame, text="Status *").grid(row=6, column=0, sticky="w", pady=FIELD_PADY)
+    ttk.Combobox(frame, textvariable=status_var, values=("confirmed", "active", "returned", "cancelled"), width=16, state="readonly").grid(row=6, column=1, sticky="w", pady=FIELD_PADY)
 
     search_var = tk.StringVar()
-    ttk.Label(frame, text="Search (Reservation ID)").grid(row=7, column=0, sticky="w", pady=(8,2))
-    ttk.Entry(frame, textvariable=search_var, width=20).grid(row=7, column=1, sticky="w", pady=(8,2))
+    ttk.Label(frame, text="Search (Rental ID)").grid(row=7, column=0, sticky="w", pady=SEARCH_PADY)
+    ttk.Entry(frame, textvariable=search_var, width=20).grid(row=7, column=1, sticky="w", pady=SEARCH_PADY)
 
-    cols = ("reservation_id", "guest_id", "booking_date", "check_in_date", "check_out_date", "status")
+    cols = ("rental_id", "customer_id", "booking_date", "pick_up_date", "return_date", "status")
+    headings = ("Rental ID", "Customer ID", "Booking Date", "Pick-up", "Return", "Status")
     tree = ttk.Treeview(frame, columns=cols, show="headings", height=12)
-    for c, w in zip(cols, (90, 60, 100, 100, 100, 100)):
-        tree.heading(c, text=c.replace("_", " ").title())
+    for c, h, w in zip(cols, headings, (80, 80, 100, 100, 100, 100)):
+        tree.heading(c, text=h)
         tree.column(c, width=w, anchor="w")
     tree.grid(row=9, column=0, columnspan=3, sticky="nsew", pady=8)
 
@@ -55,7 +56,7 @@ def build(parent):
         try:
             cn = get_connection()
             cur = cn.cursor()
-            cur.execute("SELECT guest_id, first_name, last_name FROM guest ORDER BY guest_id")
+            cur.execute("SELECT customer_id, first_name, last_name FROM customer ORDER BY customer_id")
             rows = cur.fetchall()
             cn.close()
             guest_combo["values"] = [f"{r[0]} | {r[1]} {r[2]}" for r in rows]
@@ -99,11 +100,11 @@ def build(parent):
             cur = cn.cursor()
             if search:
                 if search.isdigit():
-                    cur.execute("SELECT reservation_id, guest_id, booking_date, check_in_date, check_out_date, status FROM reservation WHERE reservation_id = %s", (int(search),))
+                    cur.execute("SELECT rental_id, customer_id, booking_date, pick_up_date, return_date, status FROM rental WHERE rental_id = %s", (int(search),))
                 else:
-                    cur.execute("SELECT reservation_id, guest_id, booking_date, check_in_date, check_out_date, status FROM reservation WHERE status LIKE %s", ("%" + search + "%",))
+                    cur.execute("SELECT rental_id, customer_id, booking_date, pick_up_date, return_date, status FROM rental WHERE status LIKE %s", ("%" + search + "%",))
             else:
-                cur.execute("SELECT reservation_id, guest_id, booking_date, check_in_date, check_out_date, status FROM reservation ORDER BY reservation_id")
+                cur.execute("SELECT rental_id, customer_id, booking_date, pick_up_date, return_date, status FROM rental ORDER BY rental_id")
             rows = cur.fetchall()
             cn.close()
             clear_tree(tree)
@@ -118,18 +119,18 @@ def build(parent):
     def do_insert():
         gid = get_combo_id(guest_var.get())
         if not id_var.get().strip() or not gid or not booking_var.get().strip() or not in_var.get().strip() or not out_var.get().strip() or not status_var.get().strip():
-            messagebox.showwarning("Reservations", "Required fields missing.", parent=frame)
+            messagebox.showwarning("Rentals", "Required fields missing.", parent=frame)
             return
         try:
             cn = get_connection()
             cur = cn.cursor()
             cur.execute(
-                "INSERT INTO reservation (reservation_id, guest_id, booking_date, check_in_date, check_out_date, status) VALUES (%s,%s,%s,%s,%s,%s)",
+                "INSERT INTO rental (rental_id, customer_id, booking_date, pick_up_date, return_date, status) VALUES (%s,%s,%s,%s,%s,%s)",
                 (int(id_var.get()), gid, booking_var.get().strip(), in_var.get().strip(), out_var.get().strip(), status_var.get())
             )
             cn.commit()
             cn.close()
-            messagebox.showinfo("Reservations", "Inserted successfully.", parent=frame)
+            messagebox.showinfo("Rentals", "Inserted successfully.", parent=frame)
             clear()
             refresh()
         except Exception as exc:
@@ -137,39 +138,39 @@ def build(parent):
 
     def do_update():
         if not id_var.get():
-            messagebox.showwarning("Reservations", "Select a record.", parent=frame)
+            messagebox.showwarning("Rentals", "Select a record.", parent=frame)
             return
         gid = get_combo_id(guest_var.get())
         if not gid or not booking_var.get().strip() or not in_var.get().strip() or not out_var.get().strip() or not status_var.get().strip():
-            messagebox.showwarning("Reservations", "Required fields missing.", parent=frame)
+            messagebox.showwarning("Rentals", "Required fields missing.", parent=frame)
             return
         try:
             cn = get_connection()
             cur = cn.cursor()
             cur.execute(
-                "UPDATE reservation SET guest_id=%s, booking_date=%s, check_in_date=%s, check_out_date=%s, status=%s WHERE reservation_id=%s",
+                "UPDATE rental SET customer_id=%s, booking_date=%s, pick_up_date=%s, return_date=%s, status=%s WHERE rental_id=%s",
                 (gid, booking_var.get().strip(), in_var.get().strip(), out_var.get().strip(), status_var.get(), int(id_var.get()))
             )
             cn.commit()
             cn.close()
-            messagebox.showinfo("Reservations", "Updated successfully.", parent=frame)
+            messagebox.showinfo("Rentals", "Updated successfully.", parent=frame)
             refresh()
         except Exception as exc:
             show_db_error(frame, exc)
 
     def do_delete():
         if not id_var.get():
-            messagebox.showwarning("Reservations", "Select a record.", parent=frame)
+            messagebox.showwarning("Rentals", "Select a record.", parent=frame)
             return
-        if not messagebox.askyesno("Reservations", "Delete this reservation?", parent=frame):
+        if not messagebox.askyesno("Rentals", "Delete this rental?", parent=frame):
             return
         try:
             cn = get_connection()
             cur = cn.cursor()
-            cur.execute("DELETE FROM reservation WHERE reservation_id=%s", (int(id_var.get()),))
+            cur.execute("DELETE FROM rental WHERE rental_id=%s", (int(id_var.get()),))
             cn.commit()
             cn.close()
-            messagebox.showinfo("Reservations", "Deleted successfully.", parent=frame)
+            messagebox.showinfo("Rentals", "Deleted successfully.", parent=frame)
             clear()
             refresh()
         except Exception as exc:

@@ -2,6 +2,10 @@ import tkinter as tk
 from tkinter import messagebox, ttk
 from mysql.connector import Error as MySQLError
 
+FIELD_PADY = (0, 6)
+SEARCH_PADY = (18, 10)
+
+
 def show_db_error(owner, exc, title="Database error"):
     messagebox.showerror(title, str(exc), parent=owner)
 
