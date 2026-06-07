@@ -87,9 +87,9 @@ def seed(cursor):
     cursor.executemany(
         "INSERT INTO invoice (invoice_id, payment_id, invoice_number) VALUES (%s,%s,%s)",
         [
-            (1, 1, "INV-2026-001"),
-            (2, 2, "INV-2026-002"),
-            (3, 3, "INV-2026-003"),
+            (1, 2, "INV-2026-001"),
+            (2, 3, "INV-2026-002"),
+            (3, 4, "INV-2026-003"),
         ],
     )
 
