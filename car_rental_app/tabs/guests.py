@@ -1,7 +1,17 @@
 import tkinter as tk
-from tkinter import messagebox, ttk
+from tkinter import ttk
 from car_rental_app.db import get_connection
-from car_rental_app.tabs.common import FIELD_PADY, SEARCH_PADY, create_tree_panel, fill_tree, show_db_error
+from car_rental_app.tabs.common import (
+    FIELD_PADY,
+    SEARCH_PADY,
+    ask_yes_no,
+    block_delete_if_linked,
+    create_tree_panel,
+    fill_tree,
+    show_db_error,
+    show_info,
+    show_warning,
+)
 
 def build(parent):
     frame = ttk.Frame(parent, padding=8)
@@ -86,7 +96,7 @@ def build(parent):
 
     def do_insert():
         if not id_var.get().strip() or not fn_var.get().strip() or not ln_var.get().strip() or not email_var.get().strip() or not phone_var.get().strip() or not nat_var.get().strip():
-            messagebox.showwarning("Customers", "All * fields required.", parent=frame)
+            show_warning(frame, "Customers", "All * fields required.")
             return
         try:
             cn = get_connection()
@@ -97,7 +107,7 @@ def build(parent):
             )
             cn.commit()
             cn.close()
-            messagebox.showinfo("Customers", "Inserted successfully.", parent=frame)
+            show_info(frame, "Customers", "Inserted successfully.")
             clear()
             refresh()
         except Exception as exc:
@@ -105,10 +115,10 @@ def build(parent):
 
     def do_update():
         if not id_var.get():
-            messagebox.showwarning("Customers", "Select a record.", parent=frame)
+            show_warning(frame, "Customers", "Select a record.")
             return
         if not fn_var.get().strip() or not ln_var.get().strip() or not email_var.get().strip() or not phone_var.get().strip() or not nat_var.get().strip():
-            messagebox.showwarning("Customers", "All * fields required.", parent=frame)
+            show_warning(frame, "Customers", "All * fields required.")
             return
         try:
             cn = get_connection()
@@ -119,24 +129,31 @@ def build(parent):
             )
             cn.commit()
             cn.close()
-            messagebox.showinfo("Customers", "Updated successfully.", parent=frame)
+            show_info(frame, "Customers", "Updated successfully.")
             refresh()
         except Exception as exc:
             show_db_error(frame, exc)
 
     def do_delete():
         if not id_var.get():
-            messagebox.showwarning("Customers", "Select a record.", parent=frame)
+            show_warning(frame, "Customers", "Select a record.")
             return
-        if not messagebox.askyesno("Customers", "Delete this record?", parent=frame):
+        if not ask_yes_no(frame, "Customers", "Delete this record?"):
             return
         try:
             cn = get_connection()
             cur = cn.cursor()
-            cur.execute("DELETE FROM customer WHERE customer_id=%s", (int(id_var.get()),))
+            customer_id = int(id_var.get())
+            if block_delete_if_linked(
+                frame, "Customers", cur,
+                "SELECT COUNT(*) FROM rental WHERE customer_id = %s", (customer_id,), "rental",
+            ):
+                cn.close()
+                return
+            cur.execute("DELETE FROM customer WHERE customer_id=%s", (customer_id,))
             cn.commit()
             cn.close()
-            messagebox.showinfo("Customers", "Deleted successfully.", parent=frame)
+            show_info(frame, "Customers", "Deleted successfully.")
             clear()
             refresh()
         except Exception as exc:

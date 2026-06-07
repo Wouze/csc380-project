@@ -1,7 +1,16 @@
 import tkinter as tk
-from tkinter import messagebox, ttk
+from tkinter import ttk
 from car_rental_app.db import get_connection
-from car_rental_app.tabs.common import FIELD_PADY, SEARCH_PADY, create_tree_panel, fill_tree, show_db_error
+from car_rental_app.tabs.common import (
+    FIELD_PADY,
+    SEARCH_PADY,
+    ask_yes_no,
+    create_tree_panel,
+    fill_tree,
+    show_db_error,
+    show_info,
+    show_warning,
+)
 
 def build(parent):
     frame = ttk.Frame(parent, padding=8)
@@ -106,7 +115,7 @@ def build(parent):
     def do_insert():
         rid = get_combo_id(res_var.get())
         if not id_var.get().strip() or not rid or not amt_var.get().strip() or not method_var.get().strip() or not status_var.get().strip() or not date_var.get().strip():
-            messagebox.showwarning("Payments", "Required fields missing.", parent=frame)
+            show_warning(frame, "Payments", "Required fields missing.")
             return
         try:
             cn = get_connection()
@@ -117,7 +126,7 @@ def build(parent):
             )
             cn.commit()
             cn.close()
-            messagebox.showinfo("Payments", "Inserted successfully.", parent=frame)
+            show_info(frame, "Payments", "Inserted successfully.")
             clear()
             refresh()
         except Exception as exc:
@@ -125,11 +134,11 @@ def build(parent):
 
     def do_update():
         if not id_var.get():
-            messagebox.showwarning("Payments", "Select a record.", parent=frame)
+            show_warning(frame, "Payments", "Select a record.")
             return
         rid = get_combo_id(res_var.get())
         if not id_var.get().strip() or not rid or not amt_var.get().strip() or not method_var.get().strip() or not status_var.get().strip() or not date_var.get().strip():
-            messagebox.showwarning("Payments", "Required fields missing.", parent=frame)
+            show_warning(frame, "Payments", "Required fields missing.")
             return
         try:
             cn = get_connection()
@@ -140,16 +149,16 @@ def build(parent):
             )
             cn.commit()
             cn.close()
-            messagebox.showinfo("Payments", "Updated successfully.", parent=frame)
+            show_info(frame, "Payments", "Updated successfully.")
             refresh()
         except Exception as exc:
             show_db_error(frame, exc)
 
     def do_delete():
         if not id_var.get():
-            messagebox.showwarning("Payments", "Select a record.", parent=frame)
+            show_warning(frame, "Payments", "Select a record.")
             return
-        if not messagebox.askyesno("Payments", "Delete this payment?", parent=frame):
+        if not ask_yes_no(frame, "Payments", "Delete this payment?"):
             return
         try:
             cn = get_connection()
@@ -157,7 +166,7 @@ def build(parent):
             cur.execute("DELETE FROM payment WHERE payment_id=%s", (int(id_var.get()),))
             cn.commit()
             cn.close()
-            messagebox.showinfo("Payments", "Deleted successfully.", parent=frame)
+            show_info(frame, "Payments", "Deleted successfully.")
             clear()
             refresh()
         except Exception as exc:

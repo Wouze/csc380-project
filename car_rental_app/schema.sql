@@ -26,22 +26,6 @@ CREATE TABLE IF NOT EXISTS `car_rental`.`customer` (
 ENGINE = InnoDB
 DEFAULT CHARACTER SET = utf8mb4;
 
-CREATE TABLE IF NOT EXISTS `car_rental`.`employee` (
-  `employee_id` INT(11) NOT NULL,
-  `first_name` VARCHAR(100) NULL DEFAULT NULL,
-  `last_name` VARCHAR(100) NULL DEFAULT NULL,
-  `role` VARCHAR(100) NULL DEFAULT NULL,
-  `salary` DECIMAL(10,2) NULL DEFAULT NULL,
-  `hire_date` DATE NULL DEFAULT NULL,
-  `branch_id` INT(11) NULL DEFAULT NULL,
-  PRIMARY KEY (`employee_id`),
-  INDEX `branch_id` (`branch_id` ASC),
-  CONSTRAINT `employee_ibfk_1`
-    FOREIGN KEY (`branch_id`)
-    REFERENCES `car_rental`.`branch` (`branch_id`))
-ENGINE = InnoDB
-DEFAULT CHARACTER SET = utf8mb4;
-
 CREATE TABLE IF NOT EXISTS `car_rental`.`car` (
   `car_id` INT(11) NOT NULL,
   `license_plate` VARCHAR(20) NULL DEFAULT NULL,
@@ -55,7 +39,8 @@ CREATE TABLE IF NOT EXISTS `car_rental`.`car` (
   INDEX `branch_id` (`branch_id` ASC),
   CONSTRAINT `car_ibfk_1`
     FOREIGN KEY (`branch_id`)
-    REFERENCES `car_rental`.`branch` (`branch_id`))
+    REFERENCES `car_rental`.`branch` (`branch_id`)
+    ON DELETE RESTRICT)
 ENGINE = InnoDB
 DEFAULT CHARACTER SET = utf8mb4;
 
@@ -70,7 +55,8 @@ CREATE TABLE IF NOT EXISTS `car_rental`.`rental` (
   INDEX `customer_id` (`customer_id` ASC),
   CONSTRAINT `rental_ibfk_1`
     FOREIGN KEY (`customer_id`)
-    REFERENCES `car_rental`.`customer` (`customer_id`))
+    REFERENCES `car_rental`.`customer` (`customer_id`)
+    ON DELETE RESTRICT)
 ENGINE = InnoDB
 DEFAULT CHARACTER SET = utf8mb4;
 
@@ -85,7 +71,8 @@ CREATE TABLE IF NOT EXISTS `car_rental`.`payment` (
   INDEX `rental_id` (`rental_id` ASC),
   CONSTRAINT `payment_ibfk_1`
     FOREIGN KEY (`rental_id`)
-    REFERENCES `car_rental`.`rental` (`rental_id`))
+    REFERENCES `car_rental`.`rental` (`rental_id`)
+    ON DELETE CASCADE)
 ENGINE = InnoDB
 DEFAULT CHARACTER SET = utf8mb4;
 
@@ -96,10 +83,12 @@ CREATE TABLE IF NOT EXISTS `car_rental`.`rental_car` (
   INDEX `car_id` (`car_id` ASC),
   CONSTRAINT `rental_car_ibfk_1`
     FOREIGN KEY (`rental_id`)
-    REFERENCES `car_rental`.`rental` (`rental_id`),
+    REFERENCES `car_rental`.`rental` (`rental_id`)
+    ON DELETE CASCADE,
   CONSTRAINT `rental_car_ibfk_2`
     FOREIGN KEY (`car_id`)
-    REFERENCES `car_rental`.`car` (`car_id`))
+    REFERENCES `car_rental`.`car` (`car_id`)
+    ON DELETE RESTRICT)
 ENGINE = InnoDB
 DEFAULT CHARACTER SET = utf8mb4;
 

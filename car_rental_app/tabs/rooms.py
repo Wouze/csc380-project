@@ -1,7 +1,18 @@
 import tkinter as tk
-from tkinter import messagebox, ttk
+from tkinter import ttk
 from car_rental_app.db import get_connection
-from car_rental_app.tabs.common import FIELD_PADY, SEARCH_PADY, create_tree_panel, fill_tree, set_combo_by_label, show_db_error
+from car_rental_app.tabs.common import (
+    FIELD_PADY,
+    SEARCH_PADY,
+    ask_yes_no,
+    block_delete_if_linked,
+    create_tree_panel,
+    fill_tree,
+    set_combo_by_label,
+    show_db_error,
+    show_info,
+    show_warning,
+)
 
 def build(parent):
     frame = ttk.Frame(parent, padding=8)
@@ -127,7 +138,7 @@ def build(parent):
     def do_insert():
         hid = get_combo_id(hotel_var.get())
         if not id_var.get().strip() or not hid or not room_num_var.get().strip() or not floor_var.get().strip() or not type_var.get().strip() or not price_var.get().strip() or not cap_var.get().strip() or not status_var.get().strip():
-            messagebox.showwarning("Cars", "Required fields missing.", parent=frame)
+            show_warning(frame, "Cars", "Required fields missing.")
             return
         try:
             cn = get_connection()
@@ -138,7 +149,7 @@ def build(parent):
             )
             cn.commit()
             cn.close()
-            messagebox.showinfo("Cars", "Inserted successfully.", parent=frame)
+            show_info(frame, "Cars", "Inserted successfully.")
             clear()
             refresh()
         except Exception as exc:
@@ -146,11 +157,11 @@ def build(parent):
 
     def do_update():
         if not id_var.get():
-            messagebox.showwarning("Cars", "Select a car.", parent=frame)
+            show_warning(frame, "Cars", "Select a car.")
             return
         hid = get_combo_id(hotel_var.get())
         if not hid or not room_num_var.get().strip() or not floor_var.get().strip() or not type_var.get().strip() or not price_var.get().strip() or not cap_var.get().strip() or not status_var.get().strip():
-            messagebox.showwarning("Cars", "Required fields missing.", parent=frame)
+            show_warning(frame, "Cars", "Required fields missing.")
             return
         try:
             cn = get_connection()
@@ -161,24 +172,31 @@ def build(parent):
             )
             cn.commit()
             cn.close()
-            messagebox.showinfo("Cars", "Updated successfully.", parent=frame)
+            show_info(frame, "Cars", "Updated successfully.")
             refresh()
         except Exception as exc:
             show_db_error(frame, exc)
 
     def do_delete():
         if not id_var.get():
-            messagebox.showwarning("Cars", "Select a car.", parent=frame)
+            show_warning(frame, "Cars", "Select a car.")
             return
-        if not messagebox.askyesno("Cars", "Delete this car?", parent=frame):
+        if not ask_yes_no(frame, "Cars", "Delete this car?"):
             return
         try:
             cn = get_connection()
             cur = cn.cursor()
-            cur.execute("DELETE FROM car WHERE car_id=%s", (int(id_var.get()),))
+            car_id = int(id_var.get())
+            if block_delete_if_linked(
+                frame, "Cars", cur,
+                "SELECT COUNT(*) FROM rental_car WHERE car_id = %s", (car_id,), "rental assignment",
+            ):
+                cn.close()
+                return
+            cur.execute("DELETE FROM car WHERE car_id=%s", (car_id,))
             cn.commit()
             cn.close()
-            messagebox.showinfo("Cars", "Deleted successfully.", parent=frame)
+            show_info(frame, "Cars", "Deleted successfully.")
             clear()
             refresh()
         except Exception as exc:

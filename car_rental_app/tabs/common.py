@@ -1,12 +1,18 @@
 import tkinter as tk
 from decimal import Decimal
-from tkinter import messagebox, ttk
+from tkinter import ttk
 from mysql.connector import Error as MySQLError
 
 FIELD_PADY = (0, 6)
 SEARCH_PADY = (18, 10)
 TREE_ROW_HEIGHT = 34
 TREE_VISIBLE_ROWS = 12
+DIALOG_FONT = ("", 12)
+DIALOG_TITLE_FONT = ("", 13, "bold")
+DIALOG_WRAP = 460
+DIALOG_MIN_WIDTH = 480
+DIALOG_MIN_HEIGHT = 170
+DIALOG_PAD = 24
 
 
 def setup_tree_style():
@@ -66,8 +72,85 @@ def set_combo_by_label(combo, label):
             return
 
 
+def _center_dialog(dialog, parent):
+    dialog.update_idletasks()
+    root = parent.winfo_toplevel()
+    x = root.winfo_rootx() + max((root.winfo_width() - dialog.winfo_width()) // 2, 0)
+    y = root.winfo_rooty() + max((root.winfo_height() - dialog.winfo_height()) // 2, 0)
+    dialog.geometry(f"+{x}+{y}")
+
+
+def _show_dialog(parent, title, message, buttons):
+    dialog = tk.Toplevel(parent)
+    dialog.title(title)
+    dialog.transient(parent.winfo_toplevel())
+    dialog.grab_set()
+    dialog.resizable(True, True)
+    dialog.minsize(DIALOG_MIN_WIDTH, DIALOG_MIN_HEIGHT)
+
+    frame = ttk.Frame(dialog, padding=DIALOG_PAD)
+    frame.pack(fill="both", expand=True)
+
+    ttk.Label(frame, text=title, font=DIALOG_TITLE_FONT).pack(anchor="w", pady=(0, 10))
+    ttk.Label(
+        frame,
+        text=message,
+        font=DIALOG_FONT,
+        wraplength=DIALOG_WRAP,
+        justify="left",
+    ).pack(fill="both", expand=True, pady=(0, 18))
+
+    result = {"value": buttons[-1][1]}
+    btn_frame = ttk.Frame(frame)
+    btn_frame.pack(anchor="e")
+
+    def close(value):
+        result["value"] = value
+        dialog.destroy()
+
+    for label, value in buttons:
+        ttk.Button(btn_frame, text=label, width=10, command=lambda v=value: close(v)).pack(
+            side="left", padx=4
+        )
+
+    dialog.bind("<Escape>", lambda _e: close(buttons[-1][1]))
+    _center_dialog(dialog, parent)
+    dialog.wait_window()
+    return result["value"]
+
+
+def show_info(parent, title, message):
+    _show_dialog(parent, title, message, [("OK", True)])
+
+
+def show_warning(parent, title, message):
+    _show_dialog(parent, title, message, [("OK", True)])
+
+
+def show_error(parent, title, message):
+    _show_dialog(parent, title, message, [("OK", True)])
+
+
+def ask_yes_no(parent, title, message):
+    return _show_dialog(parent, title, message, [("Yes", True), ("No", False)])
+
+
 def show_db_error(owner, exc, title="Database error"):
-    messagebox.showerror(title, str(exc), parent=owner)
+    show_error(owner, title, str(exc))
+
+
+def block_delete_if_linked(frame, title, cursor, count_sql, params, item_label):
+    cursor.execute(count_sql, params)
+    count = cursor.fetchone()[0]
+    if not count:
+        return False
+    noun = item_label if count == 1 else f"{item_label}s"
+    show_warning(
+        frame,
+        title,
+        f"Cannot delete — {count} linked {noun}.\nRemove or reassign them first.",
+    )
+    return True
 
 
 def clear_tree(tree):

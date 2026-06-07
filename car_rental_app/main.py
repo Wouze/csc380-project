@@ -1,7 +1,7 @@
 import tkinter as tk
-from tkinter import messagebox, ttk
+from tkinter import ttk
 
-from car_rental_app.tabs import employees, guests, hotels, invoices, reservations, rooms
+from car_rental_app.tabs import guests, hotels, invoices, rental_cars, reservations, rooms
 from car_rental_app.tabs.common import setup_tree_style
 
 
@@ -19,8 +19,8 @@ def main():
     notebook.add(rooms.build(notebook), text="Cars")
     notebook.add(guests.build(notebook), text="Customers")
     notebook.add(reservations.build(notebook), text="Rentals")
+    notebook.add(rental_cars.build(notebook), text="Rental Cars")
     notebook.add(invoices.build(notebook), text="Payments")
-    notebook.add(employees.build(notebook), text="Employees")
 
     root.mainloop()
 
