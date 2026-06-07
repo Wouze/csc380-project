@@ -76,6 +76,19 @@ CREATE TABLE IF NOT EXISTS `car_rental`.`payment` (
 ENGINE = InnoDB
 DEFAULT CHARACTER SET = utf8mb4;
 
+CREATE TABLE IF NOT EXISTS `car_rental`.`invoice` (
+  `invoice_id` INT(11) NOT NULL,
+  `payment_id` INT(11) NOT NULL,
+  `invoice_number` VARCHAR(50) NULL DEFAULT NULL,
+  PRIMARY KEY (`invoice_id`),
+  UNIQUE INDEX `payment_id` (`payment_id` ASC),
+  CONSTRAINT `invoice_ibfk_1`
+    FOREIGN KEY (`payment_id`)
+    REFERENCES `car_rental`.`payment` (`payment_id`)
+    ON DELETE CASCADE)
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8mb4;
+
 CREATE TABLE IF NOT EXISTS `car_rental`.`rental_car` (
   `rental_id` INT(11) NOT NULL,
   `car_id` INT(11) NOT NULL,

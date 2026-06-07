@@ -9,7 +9,7 @@ from car_rental_app.db import get_connection
 
 def clear_tables(cursor):
     cursor.execute("SET FOREIGN_KEY_CHECKS = 0")
-    for table in ("payment", "rental_car", "rental", "car", "customer", "branch"):
+    for table in ("invoice", "payment", "rental_car", "rental", "car", "customer", "branch"):
         cursor.execute(f"DELETE FROM {table}")
     cursor.execute("SET FOREIGN_KEY_CHECKS = 1")
 
@@ -84,6 +84,15 @@ def seed(cursor):
         ],
     )
 
+    cursor.executemany(
+        "INSERT INTO invoice (invoice_id, payment_id, invoice_number) VALUES (%s,%s,%s)",
+        [
+            (1, 1, "INV-2026-001"),
+            (2, 2, "INV-2026-002"),
+            (3, 3, "INV-2026-003"),
+        ],
+    )
+
 
 def main():
     print("Seeding car_rental with sample data...")
@@ -105,7 +114,7 @@ def main():
 
     print("Done.")
     print("  3 branches, 6 customers, 7 cars")
-    print("  6 rentals (with rental_car links), 5 payments")
+    print("  6 rentals (with rental_car links), 5 payments, 3 invoices")
     print("Run: python -m car_rental_app.main")
 
 

@@ -1,7 +1,7 @@
 import tkinter as tk
 from tkinter import ttk
 
-from car_rental_app.tabs import guests, hotels, invoices, rental_cars, reservations, rooms
+from car_rental_app.tabs import guests, hotels, invoices, payments, rental_cars, reservations, rooms
 from car_rental_app.tabs.common import setup_tree_style
 
 
@@ -20,7 +20,8 @@ def main():
     notebook.add(guests.build(notebook), text="Customers")
     notebook.add(reservations.build(notebook), text="Rentals")
     notebook.add(rental_cars.build(notebook), text="Rental Cars")
-    notebook.add(invoices.build(notebook), text="Payments")
+    notebook.add(payments.build(notebook), text="Payments")
+    notebook.add(invoices.build(notebook), text="Invoices")
 
     root.mainloop()
 
