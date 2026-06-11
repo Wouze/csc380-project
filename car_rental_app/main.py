@@ -9,8 +9,8 @@ def main():
     root = tk.Tk()
     setup_tree_style()
     root.title("Car Rental System")
-    root.geometry("1100x720")
-    root.minsize(900, 560)
+    root.geometry("1500x1020")
+    root.minsize(1200, 800)
 
     notebook = ttk.Notebook(root)
     notebook.pack(fill="both", expand=True, padx=8, pady=8)
